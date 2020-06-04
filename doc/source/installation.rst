@@ -1,6 +1,6 @@
 Installation
 ============
 
-.. code-block::
+.. code-block::console
 
     pip install enhancements
