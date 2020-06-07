@@ -131,8 +131,17 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
     und den Hilfetext ausgibt.
     """
 
-    def error(self, message):
-        pass
+    def parse_args(self, args=None, namespace=None, force_error=False):
+        self.exit_on_error = force_error
+        ret = super().parse_args(args, namespace)
+        self.exit_on_error = False
+        return ret
+
+    def parse_known_args(self, args=None, namespace=None, force_error=False):
+        self.exit_on_error = force_error
+        ret = super().parse_known_args(args, namespace)
+        self.exit_on_error = False
+        return ret
 
 
 class Module(metaclass=classproperty.meta):
@@ -277,8 +286,10 @@ class ModuleParser(_ModuleArgumentParser):
 
             for module, baseclass in zip(modulelist, modulebasecls):
                 if not issubclass(module, baseclass):
+                    logging.error('module is not an instance of baseclass')
                     raise ModuleError(module, baseclass)
                 if module is baseclass:
+                    logging.error('module must not be baseclass!')
                     raise ModuleError(module, baseclass)
                 module.prepare_module()
                 moduleparsers.append(module.PARSER)
@@ -294,11 +305,7 @@ class ModuleParser(_ModuleArgumentParser):
         pass
 
     def _create_parser(self, args=None, namespace=None):
-        try:
-            parsed_args, _ = super(ModuleParser, self).parse_known_args(args=args, namespace=namespace)
-        except Exception:
-            logging.exception("Error parsing args")
-            parsed_args = argparse.Namespace()
+        parsed_args, _ = super().parse_known_args(args=args, namespace=namespace, force_error=True)
 
         # load modules from cmd args
         if self.baseclasses:
