@@ -139,7 +139,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
     def parse_args(self, args=None, namespace=None, force_error=False):
         """parse_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
         self.exit_on_error = force_error
         ret = super().parse_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
@@ -147,7 +147,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
     def parse_known_args(self, args=None, namespace=None, force_error=False):
         """parse_known_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
         self.exit_on_error = force_error
         ret = super().parse_known_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
@@ -346,13 +346,13 @@ class ModuleParser(_ModuleArgumentParser):
             self._plugins[plugin] = plugin(args)
 
         # create complete argument parser and return arguments
-        parser = argparse.ArgumentParser(parents=self._module_parsers, **self.__kwargs)
+        parser = _ModuleArgumentParser(parents=self._module_parsers, **self.__kwargs)
         return parser
 
     def parse_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_args(args, namespace)
+        return parser.parse_args(args, namespace, force_error=True)
 
     def parse_known_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_known_args(args, namespace)
+        return parser.parse_known_args(args, namespace, force_error=True)
