@@ -68,6 +68,7 @@ def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
                             raise ModuleFromFileException('loading a module from a file is not allowed')
                         modname_file = 'enhanced_moduleloader_{}'.format(modname)
                         if modname_file not in sys.modules:
+                            logging.warning('Loading modules from files is not recommended! Please use a python package instead.')
                             # TODO: untested import from file
                             loader = importlib.machinery.SourceFileLoader(modname_file, modname)
                             module = types.ModuleType(loader.name)
