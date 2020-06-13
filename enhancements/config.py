@@ -17,13 +17,14 @@ class DefaultConfigNotFound(Exception):
 
 class ExtendedConfigParser(configparser.SafeConfigParser, object):
 
-    def __init__(self, productionini=None, defaultini='default.ini', package=None, env_name='ENHANCED_CONFIG_FILE'):
+    def __init__(self, productionini=None, defaultini='default.ini', package=None, env_name='ENHANCED_CONFIG_FILE', modules_from_file=False):
         super(ExtendedConfigParser, self).__init__(allow_no_value=True)
         self.defaultini = defaultini
         self.package = package
         self.default_config = self._get_default_config()
         self.production_config = None
         self.configfiles = []
+        self.modules_from_file = modules_from_file
 
         self._read_default_config()
 
@@ -89,7 +90,7 @@ class ExtendedConfigParser(configparser.SafeConfigParser, object):
         TODO: not python3 conform, but python2 compatible parameters
         """
         module = self.get(section, option)
-        values = get_module_class(module)
+        values = get_module_class(module, modules_from_file=self.modules_from_file)
         if not values:
             raise ValueError(
                 'Not a valid module class! section: {}, option: {}, value: {}'.format(section, option, module))

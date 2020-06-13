@@ -3,3 +3,7 @@
 
 class ContextManagerTimeout(Exception):
     pass
+
+
+class ModuleFromFileException(Exception):
+    pass

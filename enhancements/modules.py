@@ -32,9 +32,10 @@ import argparse
 import inspect
 
 from enhancements.classproperty import classproperty
+from enhancements.exceptions import ModuleFromFileException
 
 
-def get_module_class(modulelist, moduleloader=None):
+def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
     """Lädt eine Klasse anhand eines Strings.
 
     Dieser kann bei einem Modul, dass in einem PYthon Package vorhanden ist in folgender Form übergeben werden: **mymodule.MyModule**
@@ -63,6 +64,8 @@ def get_module_class(modulelist, moduleloader=None):
 
                     # Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
                     if os.path.isfile(modname):
+                        if not modules_from_file:
+                            raise ModuleFromFileException('loading a module from a file is not allowed')
                         modname_file = 'enhanced_moduleloader_{}'.format(modname)
                         if modname_file not in sys.modules:
                             # TODO: untested import from file
@@ -111,7 +114,7 @@ def append_modules(moduleloader=None):
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):  # pylint: disable=W0212
         def __call__(self, parser, args, values, option_string=None):
-            value_array = get_module_class(values, moduleloader)
+            value_array = get_module_class(values, moduleloader, modules_from_file=parser.modules_from_file)
             for module in value_array:
                 super(ModuleLoaderAppendAction, self).__call__(parser, args, module, option_string)
     return ModuleLoaderAppendAction
@@ -201,8 +204,9 @@ class ModuleParserPlugin(Module):
 
 class ModuleParser(_ModuleArgumentParser):
 
-    def __init__(self, default=(), baseclass=(), replace_default=False, **kwargs):
+    def __init__(self, default=(), baseclass=(), replace_default=False, modules_from_file=False, **kwargs):
         super(ModuleParser, self).__init__(add_help=False, **kwargs)
+        self.modules_from_file = modules_from_file
         self.__kwargs = kwargs
 
         # check if baseclass is set and baseclasses is tuple or subclass of Module
