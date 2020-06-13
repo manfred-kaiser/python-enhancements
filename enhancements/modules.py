@@ -129,21 +129,31 @@ class ModuleError(Exception):
 
 
 class _ModuleArgumentParser(argparse.ArgumentParser):
-    """Angepasster ArfumentParser, der Fehler unterdrückt
-    Diese Klasse wird benötigt, weil der ArgumentParser bei einem Fehler mit sys.exit das Progamm beendet
-    und den Hilfetext ausgibt.
-    """
+    """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
+
+    def error(self, message):
+        """enhanced error function to suppress errors on python versions < 3.9"""
+        if sys.version_info >= (3, 9):
+            super().error(message)
+        # fallback vor python versions < 3.9.x
+        if not hasattr(self, 'exit_on_error') or not self.exit_on_error:
+            return
+        super().error(message)
 
     def parse_args(self, args=None, namespace=None, force_error=False):
+        """parse_args with optional parameter 'force_error' to suppress errors while parsing args"""
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
         self.exit_on_error = force_error
         ret = super().parse_args(args, namespace)
-        self.exit_on_error = False
+        self.exit_on_error = exit_on_error_stored
         return ret
 
     def parse_known_args(self, args=None, namespace=None, force_error=False):
+        """parse_known_args with optional parameter 'force_error' to suppress errors while parsing args"""
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
         self.exit_on_error = force_error
         ret = super().parse_known_args(args, namespace)
-        self.exit_on_error = False
+        self.exit_on_error = exit_on_error_stored
         return ret
 
 
@@ -340,13 +350,13 @@ class ModuleParser(_ModuleArgumentParser):
             self._plugins[plugin] = plugin(args)
 
         # create complete argument parser and return arguments
-        parser = argparse.ArgumentParser(parents=self._module_parsers, **self.__kwargs)
+        parser = _ModuleArgumentParser(parents=self._module_parsers, **self.__kwargs)
         return parser
 
     def parse_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_args(args, namespace)
+        return parser.parse_args(args, namespace, force_error=True)
 
     def parse_known_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_known_args(args, namespace)
+        return parser.parse_known_args(args, namespace, force_error=True)
