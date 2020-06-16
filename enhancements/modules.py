@@ -32,9 +32,10 @@ import argparse
 import inspect
 
 from enhancements.classproperty import classproperty
+from enhancements.exceptions import ModuleFromFileException
 
 
-def get_module_class(modulelist, moduleloader=None):
+def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
     """Lädt eine Klasse anhand eines Strings.
 
     Dieser kann bei einem Modul, dass in einem PYthon Package vorhanden ist in folgender Form übergeben werden: **mymodule.MyModule**
@@ -63,8 +64,11 @@ def get_module_class(modulelist, moduleloader=None):
 
                     # Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
                     if os.path.isfile(modname):
+                        if not modules_from_file:
+                            raise ModuleFromFileException('loading a module from a file is not allowed')
                         modname_file = 'enhanced_moduleloader_{}'.format(modname)
                         if modname_file not in sys.modules:
+                            logging.warning('Loading modules from files is not recommended! Please use a python package instead.')
                             # TODO: untested import from file
                             loader = importlib.machinery.SourceFileLoader(modname_file, modname)
                             module = types.ModuleType(loader.name)
@@ -111,7 +115,7 @@ def append_modules(moduleloader=None):
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):  # pylint: disable=W0212
         def __call__(self, parser, args, values, option_string=None):
-            value_array = get_module_class(values, moduleloader)
+            value_array = get_module_class(values, moduleloader, modules_from_file=parser.modules_from_file)
             for module in value_array:
                 super(ModuleLoaderAppendAction, self).__call__(parser, args, module, option_string)
     return ModuleLoaderAppendAction
@@ -126,13 +130,32 @@ class ModuleError(Exception):
 
 
 class _ModuleArgumentParser(argparse.ArgumentParser):
-    """Angepasster ArfumentParser, der Fehler unterdrückt
-    Diese Klasse wird benötigt, weil der ArgumentParser bei einem Fehler mit sys.exit das Progamm beendet
-    und den Hilfetext ausgibt.
-    """
+    """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
     def error(self, message):
-        pass
+        """enhanced error function to suppress errors on python versions < 3.9"""
+        if sys.version_info >= (3, 9):
+            super().error(message)
+        # fallback vor python versions < 3.9.x
+        if not hasattr(self, 'exit_on_error') or not self.exit_on_error:
+            return
+        super().error(message)
+
+    def parse_args(self, args=None, namespace=None, force_error=False):
+        """parse_args with optional parameter 'force_error' to suppress errors while parsing args"""
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        self.exit_on_error = force_error
+        ret = super().parse_args(args, namespace)
+        self.exit_on_error = exit_on_error_stored
+        return ret
+
+    def parse_known_args(self, args=None, namespace=None, force_error=False):
+        """parse_known_args with optional parameter 'force_error' to suppress errors while parsing args"""
+        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        self.exit_on_error = force_error
+        ret = super().parse_known_args(args, namespace)
+        self.exit_on_error = exit_on_error_stored
+        return ret
 
 
 class Module(metaclass=classproperty.meta):
@@ -192,8 +215,9 @@ class ModuleParserPlugin(Module):
 
 class ModuleParser(_ModuleArgumentParser):
 
-    def __init__(self, default=(), baseclass=(), replace_default=False, **kwargs):
+    def __init__(self, default=(), baseclass=(), replace_default=False, modules_from_file=False, **kwargs):
         super(ModuleParser, self).__init__(add_help=False, **kwargs)
+        self.modules_from_file = modules_from_file
         self.__kwargs = kwargs
 
         # check if baseclass is set and baseclasses is tuple or subclass of Module
@@ -277,8 +301,10 @@ class ModuleParser(_ModuleArgumentParser):
 
             for module, baseclass in zip(modulelist, modulebasecls):
                 if not issubclass(module, baseclass):
+                    logging.error('module is not an instance of baseclass')
                     raise ModuleError(module, baseclass)
                 if module is baseclass:
+                    logging.error('module must not be baseclass!')
                     raise ModuleError(module, baseclass)
                 module.prepare_module()
                 moduleparsers.append(module.PARSER)
@@ -294,11 +320,7 @@ class ModuleParser(_ModuleArgumentParser):
         pass
 
     def _create_parser(self, args=None, namespace=None):
-        try:
-            parsed_args, _ = super(ModuleParser, self).parse_known_args(args=args, namespace=namespace)
-        except Exception:
-            logging.exception("Error parsing args")
-            parsed_args = argparse.Namespace()
+        parsed_args, _ = super().parse_known_args(args=args, namespace=namespace, force_error=True)
 
         # load modules from cmd args
         if self.baseclasses:
@@ -329,13 +351,13 @@ class ModuleParser(_ModuleArgumentParser):
             self._plugins[plugin] = plugin(args)
 
         # create complete argument parser and return arguments
-        parser = argparse.ArgumentParser(parents=self._module_parsers, **self.__kwargs)
+        parser = _ModuleArgumentParser(parents=self._module_parsers, **self.__kwargs)
         return parser
 
     def parse_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_args(args, namespace)
+        return parser.parse_args(args, namespace, force_error=True)
 
     def parse_known_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_known_args(args, namespace)
+        return parser.parse_known_args(args, namespace, force_error=True)
