@@ -11,16 +11,9 @@ Projekt Dokumentation
    configparser
    contextmanager
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Packages:
-
-   modules/modules
-
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
