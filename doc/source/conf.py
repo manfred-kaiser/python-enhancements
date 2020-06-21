@@ -21,6 +21,7 @@ project = 'Python Enhancements'
 copyright = '2020, Manfred Kaiser'
 author = 'Manfred Kaiser'
 
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
