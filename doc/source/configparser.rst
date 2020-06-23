@@ -75,7 +75,7 @@ Bei der Verwendung als Option kann der Klassenname inkl. Pfad direkt zur Option 
 
 Soll ein Modul über einen Bereich (Section) geladen werden, muss dieser Bereich folgende Einträge aufweisen:
 
-.. code-block::
+.. code-block::ini
 
     [MeinModul]
     class = package.Klasse
@@ -94,7 +94,7 @@ Soll ein Modul über einen Bereich (Section) geladen werden, muss dieser Bereich
 
 ``getplugins`` erwartet aber einen Präfix und liefert eine Liste der gefundenen Module zurück.
 
-.. code-block::
+.. code-block::ini
 
     [Plugin:PluginName]
     class = package.PluginKlasse
