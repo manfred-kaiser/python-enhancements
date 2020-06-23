@@ -6,7 +6,7 @@ To use simply copy ClassPropertyMeta and classproperty into your project
 class ClassPropertyMeta(type):
     def __setattr__(self, key, value):
         obj = self.__dict__.get(key, None)
-        if type(obj) is classproperty:
+        if isinstance(obj, classproperty):
             return obj.__set__(self, value)
         return super().__setattr__(key, value)
 
@@ -57,7 +57,7 @@ class classproperty(object):
     def __set__(self, owner, value):
         if not self.fset:
             raise AttributeError("can't set attribute")
-        if type(owner) is not ClassPropertyMeta:
+        if not isinstance(owner, ClassPropertyMeta):
             owner = type(owner)
         return self.fset.__get__(None, owner)(value)
 
