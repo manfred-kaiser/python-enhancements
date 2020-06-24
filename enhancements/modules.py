@@ -350,13 +350,13 @@ class ModuleParser(_ModuleArgumentParser):
             self._plugins[plugin] = plugin(args)
 
         # create complete argument parser and return arguments
-        parser = _ModuleArgumentParser(parents=self._module_parsers, **self.__kwargs)
+        parser = argparse.ArgumentParser(parents=self._module_parsers, **self.__kwargs)
         return parser
 
     def parse_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_args(args, namespace, force_error=True)
+        return parser.parse_args(args, namespace)
 
     def parse_known_args(self, args=None, namespace=None):
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_known_args(args, namespace, force_error=True)
+        return parser.parse_known_args(args, namespace)
