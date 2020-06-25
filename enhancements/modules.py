@@ -114,7 +114,10 @@ def append_modules(moduleloader=None):
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):  # pylint: disable=W0212
         def __call__(self, parser, args, values, option_string=None):
-            value_array = get_module_class(values, moduleloader, modules_from_file=parser.modules_from_file)
+            value_array = get_module_class(
+                values, moduleloader,
+                modules_from_file=parser.modules_from_file if hasattr(parser, 'modules_from_file') else False
+            )
             for module in value_array:
                 super(ModuleLoaderAppendAction, self).__call__(parser, args, module, option_string)
     return ModuleLoaderAppendAction
