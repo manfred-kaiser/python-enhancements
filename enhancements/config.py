@@ -15,7 +15,7 @@ class DefaultConfigNotFound(Exception):
     pass
 
 
-class ExtendedConfigParser(configparser.SafeConfigParser, object):
+class ExtendedConfigParser(configparser.SafeConfigParser):
 
     def __init__(self, productionini=None, defaultini='default.ini', package=None, env_name='ENHANCED_CONFIG_FILE', modules_from_file=False):
         super(ExtendedConfigParser, self).__init__(allow_no_value=True)

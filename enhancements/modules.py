@@ -214,7 +214,7 @@ class Module(metaclass=classproperty.meta):
         return cls.MODULES
 
     @classproperty
-    def config_section(cls):
+    def config_section(cls):  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
             return cls.__name__
         return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)

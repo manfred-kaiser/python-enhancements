@@ -11,7 +11,7 @@ class ClassPropertyMeta(type):
         return super().__setattr__(key, value)
 
 
-class classproperty(object):
+class classproperty():
     """
     Similar to @property but used on classes instead of instances.
     The only caveat being that your class must use the
