@@ -227,42 +227,45 @@ class ModuleParserPlugin(Module):
 class ModuleParser(_ModuleArgumentParser):
 
     def __init__(self, default=(), baseclass=(), replace_default=False, modules_from_file=False, **kwargs):
-        super(ModuleParser, self).__init__(add_help=False, **kwargs)
-        self.modules_from_file = modules_from_file
-        self.__kwargs = kwargs
-
         # check if baseclass is set and baseclasses is tuple or subclass of Module
         if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, Module)):
             raise ValueError("baseclass must be tuple or subclass of Module")
 
-        # set default as baseclass if baseclass is not set
-        _baseclasses = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
-        _default = default if isinstance(baseclass, default) else (baseclass,)
-        if not _baseclasses and _default:
-            _baseclasses.extend(_default)
-        # self.baseclasses must be tuple, because issubclass requires tuple and not list
-        self.baseclasses = tuple([bcls for bcls in _baseclasses if bcls])
-
-        # check if all baseclasses are subclass of Module
-        for bcls in self.baseclasses:
-            if not isinstance(bcls, type) or not issubclass(bcls, Module):
-                raise ModuleError('Baseclass mast be subclass of Module')
-
+        super(ModuleParser, self).__init__(add_help=False, **kwargs)
+        self.modules_from_file = modules_from_file
+        self.__kwargs = kwargs
         self._extra_modules = []
+        self._module_parsers = {self}
+        self._plugins = {}
+
+        self.default_class = default if isinstance(baseclass, default) else (baseclass,)
+        self.baseclasses = self._get_baseclasses(baseclass)
+
         if self.baseclasses:
             self.add_argument(
                 '-m',
                 '--module',
                 dest='modules',
                 action=append_modules(self),
-                default=list(_default) if _default and not replace_default else [],
+                default=list(self.default_class) if self.default_class and not replace_default else [],
                 help='Module to parse, modify data'
             )
-        else:
-            logging.debug("modules are not supported")
 
-        self._module_parsers = {self}
-        self._plugins = {}
+    def _get_baseclasses(self, baseclass):
+        # set default as baseclass if baseclass is not set
+        _baseclasses = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
+        if not _baseclasses and self.default_class:
+            _baseclasses.extend(self.default_class)
+        # self.baseclasses must be tuple, because issubclass requires tuple and not list
+        baseclasses = tuple([bcls for bcls in _baseclasses if bcls])
+
+        # check if all baseclasses are subclass of Module
+        for bcls in baseclasses:
+            if not isinstance(bcls, type) or not issubclass(bcls, Module):
+                raise ModuleError('Baseclass mast be subclass of Module')
+        if not baseclasses:
+            logging.debug("modules are not supported")
+        return baseclasses
 
     @property
     def parser(self):
