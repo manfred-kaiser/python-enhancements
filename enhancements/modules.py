@@ -35,6 +35,45 @@ from enhancements.classproperty import classproperty
 from enhancements.exceptions import ModuleFromFileException
 
 
+def _split_module_string(modulearg, moduleloader=None):
+    if moduleloader and isinstance(moduleloader, ModuleParser):
+        # Wurde ein ModuleLoader übergeben, wird dieser verwendet, um den Pfad zum Modul zu bekommen
+        modulearg = moduleloader.get_module_path(modulearg)
+    # Modulname und Pfad werden voneinander getrennt
+    modname, funcname = modulearg.rsplit(':' if ':' in modulearg else '.', 1)
+    return modname, funcname
+
+
+def _load_module_from_string(modname, modules_from_file=False):
+    # Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
+    if not os.path.isfile(modname):
+        return importlib.import_module(modname)
+
+    if not modules_from_file:
+        raise ModuleFromFileException('loading a module from a file is not allowed')
+
+    modname_file = 'enhanced_moduleloader_{}'.format(modname)
+    if modname_file not in sys.modules:
+        logging.debug("using already imported module %s", modname_file)
+        return sys.modules[modname_file]
+
+    logging.warning('Loading modules from files is not recommended! Please use a python package instead.')
+    loader = importlib.machinery.SourceFileLoader(modname_file, modname)
+    module = types.ModuleType(loader.name)
+    loader.exec_module(module)
+    return module
+
+
+def _get_valid_module_class(module, funcname):
+    """Prüfen, ob das angefoprderte Modul existiert und gibt die Klasse zurück"""
+    handlerclass = getattr(module, funcname, None)
+    # Prüfen, ob das angeforderte Modul eine Subklasse von Module ist
+    if not handlerclass or not isinstance(handlerclass, type) or not issubclass(handlerclass, Module):
+        logging.error("Module is not subclass of Module!")
+        raise ModuleError()
+    return handlerclass
+
+
 def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
     """Lädt eine Klasse anhand eines Strings.
 
@@ -54,42 +93,12 @@ def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
                 # Wenn bereits ein Modul übergeben wurd, wird dieses gleich der Ergebnisliste hinzugefügt
                 modules.append(modulearg)
             else:
-                if moduleloader and isinstance(moduleloader, ModuleParser):
-                    # Wurde ein ModuleLoader übergeben, wird dieser verwendet, um den Pfad zum Modul zu bekommen
-                    modulearg = moduleloader.get_module_path(modulearg)
+                modname, funcname = _split_module_string(modulearg, moduleloader)
+                module = _load_module_from_string(modname, modules_from_file)
+                handlerclass = _get_valid_module_class(module, funcname)
+                if handlerclass:
+                    modules.append(handlerclass)
 
-                # Modulname und Pfad werden voneinander getrennt
-                modname, funcname = modulearg.rsplit(':' if ':' in modulearg else '.', 1)
-
-                # Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
-                if os.path.isfile(modname):
-                    if not modules_from_file:
-                        raise ModuleFromFileException('loading a module from a file is not allowed')
-                    modname_file = 'enhanced_moduleloader_{}'.format(modname)
-                    if modname_file not in sys.modules:
-                        logging.warning('Loading modules from files is not recommended! Please use a python package instead.')
-                        # TODO: untested import from file
-                        loader = importlib.machinery.SourceFileLoader(modname_file, modname)
-                        module = types.ModuleType(loader.name)
-                        loader.exec_module(module)
-                    else:
-                        logging.debug("using already imported module %s", modname_file)
-                        module = sys.modules[modname_file]
-                else:
-                    module = importlib.import_module(modname)
-
-                # Prüfen, ob das angefoprderte Modul existiert
-                if hasattr(module, funcname):
-                    handlerclass = getattr(module, funcname)
-                    # Prüfen, ob das angeforderte Modul eine Subklasse von Module ist
-                    if isinstance(handlerclass, type) and issubclass(handlerclass, Module):
-                        modules.append(handlerclass)
-                    else:
-                        logging.error("Module is not subclass of Module!")
-                        raise ModuleError()
-                else:
-                    logging.error("Module not found!")
-                    raise ModuleError()
     except ImportError:
         raise ModuleError
     except Exception:
@@ -114,7 +123,10 @@ def append_modules(moduleloader=None):
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):  # pylint: disable=W0212
         def __call__(self, parser, args, values, option_string=None):
-            value_array = get_module_class(values, moduleloader, modules_from_file=parser.modules_from_file)
+            value_array = get_module_class(
+                values, moduleloader,
+                modules_from_file=parser.modules_from_file if hasattr(parser, 'modules_from_file') else False
+            )
             for module in value_array:
                 super(ModuleLoaderAppendAction, self).__call__(parser, args, module, option_string)
     return ModuleLoaderAppendAction

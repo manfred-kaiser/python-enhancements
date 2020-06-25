@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Python Enhancements'
-copyright = '2020, Manfred Kaiser'
+copyright = '2020, Manfred Kaiser'  # pylint: disable=redefined-builtin
 author = 'Manfred Kaiser'
 
 master_doc = 'index'
