@@ -18,7 +18,7 @@ setup(
     long_description_content_type='text/markdown',
     python_requires='>= 3.5',
     packages=find_packages(),
-    url="https://github.com/manfred-kaiser/python-enhancements",
+    url="https://enhancements.readthedocs.io/",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)"
