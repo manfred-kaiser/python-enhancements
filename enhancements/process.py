@@ -7,5 +7,5 @@ def pid_lock(pid_file, exit_code=0, message='another instance is running'):
     try:
         fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
-        print("another instance is running", file=sys.stderr)
+        print(message, file=sys.stderr)
         sys.exit(exit_code)
