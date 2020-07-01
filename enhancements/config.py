@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 
-import configparser
+from configparser import SafeConfigParser, _UNSET
 import inspect
 import logging
 import os
-import pickle
+import pickle  # nosec
 import pkg_resources
 
 from enhancements.modules import get_module_class, Module
@@ -15,7 +15,7 @@ class DefaultConfigNotFound(Exception):
     pass
 
 
-class ExtendedConfigParser(configparser.SafeConfigParser):
+class ExtendedConfigParser(SafeConfigParser):
 
     def __init__(self, productionini=None, defaultini='default.ini', package=None, env_name='ENHANCED_CONFIG_FILE', modules_from_file=False):
         super(ExtendedConfigParser, self).__init__(allow_no_value=True)
@@ -69,7 +69,6 @@ class ExtendedConfigParser(configparser.SafeConfigParser):
     def copy(self):
         """ create a copy of the current config
         """
-
         return pickle.loads(pickle.dumps(self))  # nosec
 
     def append(self, configpath):
@@ -80,20 +79,27 @@ class ExtendedConfigParser(configparser.SafeConfigParser):
             logging.debug("using production configfile: %s", configpath)
             self.read(configpath)
         else:
-            logging.warning("production config file '%s' does not exist or is not readable.", configpath)
+            logging.warning(
+                "production config file '%s' does not exist or is not readable.",
+                configpath
+            )
 
     def getlist(self, section, option, sep=',', chars=None):
         return [chunk.strip(chars) for chunk in self.get(section, option).split(sep)]
 
     def _getmodule_option(self, section, option):
         """ get a module class from config file
-        TODO: not python3 conform, but python2 compatible parameters
         """
         module = self.get(section, option)
         values = get_module_class(module, modules_from_file=self.modules_from_file)
         if not values:
             raise ValueError(
-                'Not a valid module class! section: {}, option: {}, value: {}'.format(section, option, module))
+                'Not a valid module class! section: {}, option: {}, value: {}'.format(
+                    section,
+                    option,
+                    module
+                )
+            )
         return values[0]
 
     def _getmodule_section(self, section):
@@ -122,3 +128,9 @@ class ExtendedConfigParser(configparser.SafeConfigParser):
                 if self.getboolean(section, 'enabled'):
                     plugins.append(self.getmodule(section, 'class'))
         return plugins
+
+    def getboolean_or_string(self, section, option, *, raw=False, vars=None, fallback=_UNSET):
+        try:
+            return self.getboolean(section, option, raw=raw, vars=vars, fallback=fallback)
+        except ValueError:
+            return self.get(section, option, raw=raw, vars=vars, fallback=fallback)
