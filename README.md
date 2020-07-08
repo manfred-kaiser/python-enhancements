@@ -1,5 +1,6 @@
 # python-enhancements - Enhanced Python Classes
 
+![Python package](https://github.com/manfred-kaiser/python-enhancements/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/enhancements/badge/?version=master)](https://enhancements.readthedocs.io/de/master/?badge=master)
 [![CodeFactor](https://www.codefactor.io/repository/github/manfred-kaiser/python-enhancements/badge)](https://www.codefactor.io/repository/github/manfred-kaiser/python-enhancements)
 [![Github version](https://img.shields.io/github/v/release/manfred-kaiser/python-enhancements?label=github&logo=github)](https://github.com/manfred-kaiser/python-enhancements/releases)
