@@ -17,7 +17,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>= 3.5',
-    packages=find_packages(),
+    packages=find_packages(exclude=("tests",)),
     url="https://enhancements.readthedocs.io/",
     classifiers=[
         "Programming Language :: Python :: 3",
