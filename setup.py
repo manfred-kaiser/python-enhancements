@@ -10,14 +10,14 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='enhancements',
-    version='0.0.8',
+    version='0.0.9',
     author='Manfred Kaiser',
     author_email='manfred.kaiser@logfile.at',
     description='utility library',
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>= 3.5',
-    packages=find_packages(),
+    packages=find_packages(exclude=("tests",)),
     url="https://enhancements.readthedocs.io/",
     classifiers=[
         "Programming Language :: Python :: 3",

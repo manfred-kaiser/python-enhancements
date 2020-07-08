@@ -36,6 +36,13 @@ from enhancements.exceptions import ModuleFromFileException
 
 
 def _split_module_string(modulearg, moduleloader=None):
+    """split a string in a module/path and the functionname
+
+    >>> _split_module_string('enhancements.examples.ExampleModule')
+    ('enhancements.examples', 'ExampleModule')
+    >>> _split_module_string('enhancements.examples:ExampleModule')
+    ('enhancements.examples', 'ExampleModule')
+    """
     if moduleloader and isinstance(moduleloader, ModuleParser):
         # Wurde ein ModuleLoader übergeben, wird dieser verwendet, um den Pfad zum Modul zu bekommen
         modulearg = moduleloader.get_module_path(modulearg)
@@ -45,7 +52,11 @@ def _split_module_string(modulearg, moduleloader=None):
 
 
 def _load_module_from_string(modname, modules_from_file=False):
-    # Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
+    """Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
+
+    >>> type(_load_module_from_string('enhancements.examples'))
+    <class 'module'>
+    """
     if not os.path.isfile(modname):
         return importlib.import_module(modname)
 
@@ -53,7 +64,7 @@ def _load_module_from_string(modname, modules_from_file=False):
         raise ModuleFromFileException('loading a module from a file is not allowed')
 
     modname_file = 'enhanced_moduleloader_{}'.format(modname)
-    if modname_file not in sys.modules:
+    if modname_file in sys.modules:
         logging.debug("using already imported module %s", modname_file)
         return sys.modules[modname_file]
 
@@ -65,11 +76,12 @@ def _load_module_from_string(modname, modules_from_file=False):
 
 
 def _get_valid_module_class(module, funcname):
-    """Prüfen, ob das angefoprderte Modul existiert und gibt die Klasse zurück"""
+    """Prüfen, ob das angeforderte Modul existiert und gibt die Klasse zurück
+    """
     handlerclass = getattr(module, funcname, None)
     # Prüfen, ob das angeforderte Modul eine Subklasse von Module ist
     if not handlerclass or not isinstance(handlerclass, type) or not issubclass(handlerclass, Module):
-        logging.error("Module is not subclass of Module!")
+        logging.error("Module %s is not subclass of Module!", type(handlerclass))
         raise ModuleError()
     return handlerclass
 
@@ -103,6 +115,7 @@ def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
         raise ModuleError
     except Exception:
         # in case of an exception delete all loaded modules
+        # TODO: raise error instead of returning empty modules
         logging.exception("Unable to load module")
         del modules[:]
     return modules
