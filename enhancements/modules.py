@@ -64,7 +64,7 @@ def _load_module_from_string(modname, modules_from_file=False):
         raise ModuleFromFileException('loading a module from a file is not allowed')
 
     modname_file = 'enhanced_moduleloader_{}'.format(modname)
-    if modname_file not in sys.modules:
+    if modname_file in sys.modules:
         logging.debug("using already imported module %s", modname_file)
         return sys.modules[modname_file]
 
@@ -115,6 +115,7 @@ def get_module_class(modulelist, moduleloader=None, modules_from_file=False):
         raise ModuleError
     except Exception:
         # in case of an exception delete all loaded modules
+        # TODO: raise error instead of returning empty modules
         logging.exception("Unable to load module")
         del modules[:]
     return modules
