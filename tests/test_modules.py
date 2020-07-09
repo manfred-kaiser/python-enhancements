@@ -16,6 +16,14 @@ from enhancements.modules import (
 )
 
 
+class NoModuleClass():
+    pass
+
+
+class ExampleSubModule(ExampleModule):
+    CONFIG_PREFIX = 'Examples'
+
+
 def test_split_module_string():
     # split package like modulename
     modname, funcname = _split_module_string('enhancements.examples.HexDump')
@@ -72,10 +80,42 @@ def test_get_module_class():
     assert not get_module_class(1234)
 
 
-def test_module_parser_hex_dump():
+def test_module_parser():
     parser = ModuleParser(baseclass=ExampleModule)
     args = parser.parse_args(['-m', 'enhancements.examples.HexDump'])
     assert len(args.modules) == 2
     hex_dump_module = args.modules[1]
     assert issubclass(hex_dump_module, ExampleModule)
     assert hex_dump_module.PARSER._actions[0].dest == 'hexwidth'
+
+    with pytest.raises(ValueError):
+        ModuleParser(baseclass=NoModuleClass)
+
+
+def test_module():
+    # test keyword arguments in constructor
+    hex_dump = HexDump(hexwidth=10)
+    assert isinstance(hex_dump, Module)
+    # test wrong keyword argument name
+    with pytest.raises(KeyError):
+        HexDump(missing_arg=1)
+    # test wrong keyword argument type
+    with pytest.raises(ValueError):
+        HexDump(hexwidth='wrong_type')
+    assert HexDump.config_section == 'HexDump'
+    assert ExampleSubModule.config_section == 'Examples:ExampleSubModule'
+
+
+def test_sub_modules():
+    HexDump.add_module(
+        '--custom-module',
+        dest='custom_module',
+        default=ExampleSubModule
+    )
+    with pytest.raises(ModuleError):
+        HexDump.add_module(
+            '--custom-module2',
+            dest='custom_module2',
+            default=ExampleSubModule,
+            baseclass=1
+        )
