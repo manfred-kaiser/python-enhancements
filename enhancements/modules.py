@@ -194,7 +194,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
 class Module(metaclass=ClassPropertyMeta):
     PARSER: Optional[_ModuleArgumentParser] = None
-    MODULES: Optional[List['Module']] = None
+    MODULES: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
     def __init__(self, args: List[Text] = None, namespace: Optional[argparse.Namespace] = None, **kwargs) -> None:
@@ -234,7 +234,7 @@ class Module(metaclass=ClassPropertyMeta):
         cls.parser_arguments()
 
     @classmethod
-    def get_modules(cls) -> Optional[List['Module']]:
+    def get_modules(cls) -> Optional[List[Tuple[argparse.Action, Any]]]:
         return cls.MODULES
 
     @classproperty
