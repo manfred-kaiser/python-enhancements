@@ -18,7 +18,7 @@ def memorylimit(limit, restype=resource.RLIMIT_AS):
 
 
 @contextlib.contextmanager
-def time_limit(seconds):
+def time_limit(seconds: int):
     def signal_handler(signum, frame):
         raise ContextManagerTimeout("Timed out!")
     signal.signal(signal.SIGALRM, signal_handler)

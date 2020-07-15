@@ -2,9 +2,10 @@ import fcntl
 import logging
 import pathlib
 import os
+from typing import Text
 
 
-def pid_lock(pid_file, message='another instance is running'):
+def pid_lock(pid_file: Text, message: Text = 'another instance is running') -> bool:
     try:
         pid_dir = os.path.dirname(pid_file)
         if os.path.isdir(pid_dir):

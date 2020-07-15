@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
 import os
 from os import makedirs
+from typing import (
+    Optional,
+    List,
+    Text
+)
+
 
 from enhancements.config import ExtendedConfigParser
 from enhancements.modules import ModuleParserPlugin
@@ -12,7 +19,7 @@ class LogModule(ModuleParserPlugin):
 
     LOGFILE = None
 
-    def __init__(self, cmdargs=None, namespace=None):
+    def __init__(self, cmdargs: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None):
         super().__init__(cmdargs, namespace)
 
         root_logger = logging.getLogger()
@@ -62,7 +69,7 @@ class LogModule(ModuleParserPlugin):
             )
 
     @staticmethod
-    def create_log_dir(logfile):
+    def create_log_dir(logfile: Text):
         usefilelogger = True
         logpath = os.path.dirname(logfile)
         if not os.path.exists(logpath):
@@ -79,7 +86,7 @@ class ConfigModule(ModuleParserPlugin):
     CONFIGFILE = None
     BASEPACKAGE = None
 
-    def __init__(self, cmdargs=None, namespace=None):
+    def __init__(self, cmdargs: List[Text] = None, namespace: Optional[argparse.Namespace] = None):
         super().__init__(cmdargs, namespace)
         if not self.args.config.configfiles and self.CONFIGFILE:
             self.args.config.append(self.CONFIGFILE)
