@@ -91,6 +91,11 @@ def test_module_parser():
     with pytest.raises(ValueError):
         ModuleParser(baseclass=NoModuleClass)
 
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        parser.parse_args(['--notvalid'])
+    assert pytest_wrapped_e.type == SystemExit
+    assert pytest_wrapped_e.value.code == 2
+
 
 def test_module():
     # test keyword arguments in constructor

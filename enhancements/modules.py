@@ -31,11 +31,22 @@ import logging
 import argparse
 import inspect
 
-from enhancements.classproperty import classproperty
+from typing import (
+    Any,
+    List,
+    Optional,
+    Tuple,
+    Dict,
+    Type,
+    Set,
+    Text
+)
+
+from enhancements.classproperty import classproperty, ClassPropertyMeta
 from enhancements.exceptions import ModuleFromFileException
 
 
-def _split_module_string(modulearg, moduleloader=None):
+def _split_module_string(modulearg: Text, moduleloader: 'ModuleParser' = None):
     """split a string in a module/path and the functionname
 
     >>> _split_module_string('enhancements.examples.ExampleModule')
@@ -156,18 +167,18 @@ class ModuleError(Exception):
 class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
-    def error(self, message):
-        """enhanced error function to suppress errors on python versions < 3.9"""
-        if sys.version_info >= (3, 9):
-            super().error(message)
-        # fallback vor python versions < 3.9.x
-        if not hasattr(self, 'exit_on_error') or not self.exit_on_error:
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.exit_on_error = True
+
+    def error(self, message: Text):
+        if self.exit_on_error:
             return
         super().error(message)
 
     def parse_args(self, args=None, namespace=None, force_error=False):
         """parse_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        exit_on_error_stored = self.exit_on_error
         self.exit_on_error = force_error
         ret = super().parse_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
@@ -175,31 +186,32 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
     def parse_known_args(self, args=None, namespace=None, force_error=False):
         """parse_known_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        exit_on_error_stored = self.exit_on_error
         self.exit_on_error = force_error
         ret = super().parse_known_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
         return ret
 
 
-class Module(metaclass=classproperty.meta):
-    PARSER = None
-    MODULES = None
-    CONFIG_PREFIX = None
+class Module(metaclass=ClassPropertyMeta):
+    PARSER: Optional[_ModuleArgumentParser] = None
+    MODULES: Optional[List[Tuple[argparse.Action, Any]]] = None
+    CONFIG_PREFIX: Optional[Text] = None
 
-    def __init__(self, args=None, namespace=None, **kwargs):
+    def __init__(self, args: List[Text] = None, namespace: Optional[argparse.Namespace] = None, **kwargs) -> None:
         if not self.PARSER:
             self.prepare_module()
-        self.args, _ = self.PARSER.parse_known_args(args, namespace)
+        if self.PARSER:
+            self.args, _ = self.PARSER.parse_known_args(args, namespace)
 
-        actions = {action.dest: action for action in self.PARSER._actions}
-        for param_name, param_value in kwargs.items():
-            action = actions.get(param_name)
-            if not action:
-                raise KeyError('keyword argument {} has no param'.format(param_name))
-            if hasattr(action, 'type') and not isinstance(param_value, action.type):
-                raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
-            setattr(self.args, param_name, param_value)
+            actions = {action.dest: action for action in self.PARSER._actions}
+            for param_name, param_value in kwargs.items():
+                action = actions.get(param_name)
+                if not action:
+                    raise KeyError('keyword argument {} has no param'.format(param_name))
+                if hasattr(action, 'type') and not isinstance(param_value, action.type):
+                    raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
+                setattr(self.args, param_name, param_value)
 
     @classmethod
     def add_module(cls, *args, **kwargs):
@@ -213,24 +225,24 @@ class Module(metaclass=classproperty.meta):
         cls.MODULES.append((cls.PARSER.add_argument(*args, **kwargs), baseclass))
 
     @classmethod
-    def parser_arguments(cls):
+    def parser_arguments(cls) -> None:
         pass
 
     @classmethod
-    def prepare_module(cls):
+    def prepare_module(cls) -> None:
         cls.MODULES = []
         cls.PARSER = _ModuleArgumentParser(add_help=False, description=cls.__name__)
         cls.parser_arguments()
 
     @classmethod
-    def get_modules(cls):
+    def get_modules(cls) -> Optional[List[Tuple[argparse.Action, Any]]]:
         return cls.MODULES
 
     @classproperty
-    def config_section(cls):  # pylint: disable=E0213
+    def config_section(cls) -> Text:  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
-            return cls.__name__
-        return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)
+            return cls.__name__  # type: ignore
+        return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)  # type: ignore
 
 
 class ModuleParserPlugin(Module):
@@ -239,17 +251,28 @@ class ModuleParserPlugin(Module):
 
 class ModuleParser(_ModuleArgumentParser):
 
-    def __init__(self, default=(), baseclass=(), replace_default=False, modules_from_file=False, **kwargs):
+    def __init__(
+        self,
+        default: Optional[Tuple[Type[Module], ...]] = None,
+        baseclass=None,  # TODO: check if baseclass must be a tuple
+        replace_default: bool = False,
+        modules_from_file: bool = False,
+        **kwargs
+    ):
+        if default is None:
+            default = ()
+        if baseclass is None:
+            baseclass = ()
         # check if baseclass is set and baseclasses is tuple or subclass of Module
         if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, Module)):
             raise ValueError("baseclass must be tuple or subclass of Module")
 
         super(ModuleParser, self).__init__(add_help=False, **kwargs)
-        self.modules_from_file = modules_from_file
+        self.modules_from_file: bool = modules_from_file
         self.__kwargs = kwargs
-        self._extra_modules = []
-        self._module_parsers = {self}
-        self._plugins = {}
+        self._extra_modules: List[Tuple[argparse.Action, type]] = []
+        self._module_parsers: Set[argparse.ArgumentParser] = {self}
+        self._plugins: Dict[Type[ModuleParserPlugin], Optional[Module]] = {}
 
         self.default_class = default if isinstance(baseclass, default) else (baseclass,)
         self.baseclasses = self._get_baseclasses(baseclass)
@@ -281,15 +304,15 @@ class ModuleParser(_ModuleArgumentParser):
         return baseclasses
 
     @property
-    def parser(self):
+    def parser(self) -> 'ModuleParser':
         return self
 
-    def add_plugin(self, plugin):
+    def add_plugin(self, plugin: Type[ModuleParserPlugin]) -> None:
         if not inspect.isclass(plugin) or not issubclass(plugin, ModuleParserPlugin):
             raise ValueError("plugin must be a class and subclass of Module!")
         self._plugins[plugin] = None
 
-    def add_parser(self, parser):
+    def add_parser(self, parser: argparse.ArgumentParser) -> None:
         for module_parser in self._module_parsers:
             if module_parser.description == parser.description:
                 return
@@ -298,7 +321,7 @@ class ModuleParser(_ModuleArgumentParser):
         # append parser to list
         self._module_parsers.add(parser)
 
-    def add_module(self, *args, **kwargs):
+    def add_module(self, *args, **kwargs) -> None:
         # remove "baseclass" from arguments
         baseclass = kwargs.pop('baseclass', Module)
         for arg in args:
@@ -316,7 +339,14 @@ class ModuleParser(_ModuleArgumentParser):
     def get_module_path(self, module):
         return module
 
-    def get_sub_modules(self, parsed_args, args, namespace, modules, use_modules=False):
+    def get_sub_modules(
+        self,
+        parsed_args: argparse.Namespace,
+        args: Optional[List[Text]],
+        namespace: Optional[argparse.Namespace],
+        modules,  # TODO: add typing
+        use_modules: bool = False
+    ) -> List[argparse.ArgumentParser]:
         moduleparsers = []
         if modules:
             if not use_modules:
@@ -334,7 +364,8 @@ class ModuleParser(_ModuleArgumentParser):
                     logging.error('module must not be baseclass!')
                     raise ModuleError(module, baseclass)
                 module.prepare_module()
-                moduleparsers.append(module.PARSER)
+                if module.PARSER:
+                    moduleparsers.append(module.PARSER)
 
                 try:
                     parsed_subargs, _ = module.PARSER.parse_known_args(args=args, namespace=namespace)
@@ -346,7 +377,7 @@ class ModuleParser(_ModuleArgumentParser):
     def _check_value(self, action, value):
         pass
 
-    def _create_parser(self, args=None, namespace=None):
+    def _create_parser(self, args: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None):
         parsed_args, _ = super().parse_known_args(args=args, namespace=namespace, force_error=True)
 
         # load modules from cmd args
@@ -371,14 +402,15 @@ class ModuleParser(_ModuleArgumentParser):
         # load plugins
         for plugin in self._plugins:
             plugin.prepare_module()
-            self.add_parser(plugin.PARSER)
+            if plugin.PARSER:
+                self.add_parser(plugin.PARSER)
 
         # initialize plugins
         for plugin in self._plugins:
             self._plugins[plugin] = plugin(args)
 
         # create complete argument parser and return arguments
-        parser = argparse.ArgumentParser(parents=self._module_parsers, **self.__kwargs)
+        parser = argparse.ArgumentParser(parents=list(self._module_parsers), **self.__kwargs)
         return parser
 
     def parse_args(self, args=None, namespace=None):
