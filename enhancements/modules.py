@@ -32,6 +32,7 @@ import argparse
 import inspect
 
 from typing import (
+    Any,
     List,
     Optional,
     Tuple,
@@ -166,18 +167,18 @@ class ModuleError(Exception):
 class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.exit_on_error = True
+
     def error(self, message: Text):
-        """enhanced error function to suppress errors on python versions < 3.9"""
-        if sys.version_info >= (3, 9):
-            super().error(message)
-        # fallback vor python versions < 3.9.x
-        if not hasattr(self, 'exit_on_error') or not self.exit_on_error:
+        if self.exit_on_error:
             return
         super().error(message)
 
     def parse_args(self, args=None, namespace=None, force_error=False):
         """parse_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        exit_on_error_stored = self.exit_on_error
         self.exit_on_error = force_error
         ret = super().parse_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
@@ -185,7 +186,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
     def parse_known_args(self, args=None, namespace=None, force_error=False):
         """parse_known_args with optional parameter 'force_error' to suppress errors while parsing args"""
-        exit_on_error_stored = self.exit_on_error if sys.version_info >= (3, 9) else True
+        exit_on_error_stored = self.exit_on_error
         self.exit_on_error = force_error
         ret = super().parse_known_args(args, namespace)
         self.exit_on_error = exit_on_error_stored
