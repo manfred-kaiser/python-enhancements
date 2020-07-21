@@ -1,10 +1,14 @@
 """
 To use simply copy ClassPropertyMeta and classproperty into your project
 """
+from typing import (
+    Any,
+    Text
+)
 
 
 class ClassPropertyMeta(type):
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: Text, value: Any) -> None:
         obj = self.__dict__.get(key, None)
         if isinstance(obj, classproperty):
             return obj.__set__(self, value)
@@ -42,7 +46,7 @@ class classproperty():
 
     meta = ClassPropertyMeta
 
-    def __init__(self, fget, fset=None):
+    def __init__(self, fget, fset=None) -> None:
         self.fget = self._fix_function(fget)
         self.fset = None if fset is None else self._fix_function(fset)
 

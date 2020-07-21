@@ -46,7 +46,7 @@ from enhancements.classproperty import classproperty, ClassPropertyMeta
 from enhancements.exceptions import ModuleFromFileException
 
 
-def _split_module_string(modulearg: Text, moduleloader: 'ModuleParser' = None):
+def _split_module_string(modulearg: Text, moduleloader: Optional['ModuleParser'] = None):
     """split a string in a module/path and the functionname
 
     >>> _split_module_string('enhancements.examples.ExampleModule')
@@ -198,7 +198,7 @@ class Module(metaclass=ClassPropertyMeta):
     MODULES: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
-    def __init__(self, args: List[Text] = None, namespace: Optional[argparse.Namespace] = None, **kwargs) -> None:
+    def __init__(self, args: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs) -> None:
         if not self.PARSER:
             self.prepare_module()
         if self.PARSER:
@@ -258,7 +258,7 @@ class ModuleParser(_ModuleArgumentParser):
         replace_default: bool = False,
         modules_from_file: bool = False,
         **kwargs
-    ):
+    ) -> None:
         if default is None:
             default = ()
         if baseclass is None:
@@ -321,7 +321,7 @@ class ModuleParser(_ModuleArgumentParser):
         # append parser to list
         self._module_parsers.add(parser)
 
-    def add_module(self, *args, **kwargs) -> None:
+    def add_module(self, *args: Any, **kwargs: Any) -> None:
         # remove "baseclass" from arguments
         baseclass = kwargs.pop('baseclass', Module)
         for arg in args:

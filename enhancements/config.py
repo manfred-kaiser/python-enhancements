@@ -10,7 +10,8 @@ from typing import (
     Optional,
     List,
     Union,
-    Text
+    Text,
+    Iterable
 )
 
 from enhancements.modules import get_module_class, Module
@@ -72,11 +73,12 @@ class ExtendedConfigParser(SafeConfigParser):
             logging.debug("Using default config: %s", self.default_config)
             self.append(self.default_config)
 
-    def read(self, configpath):
+    def read(self, filenames: Union[Union[str, os.PathLike[str]], Iterable[Union[str, os.PathLike[str]]]], encoding: Optional[Text] = 'utf-8') -> List[Text]:
         try:
-            super(ExtendedConfigParser, self).read(configpath, encoding='utf-8')
+            return super(ExtendedConfigParser, self).read(filenames, encoding=encoding)
         except Exception:
-            logging.exception("error reading %s", configpath)
+            logging.exception("error reading %s", filenames)
+            return []
 
     def copy(self) -> 'ExtendedConfigParser':
         """ create a copy of the current config
