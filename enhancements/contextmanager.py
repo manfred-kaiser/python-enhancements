@@ -3,12 +3,13 @@
 import contextlib
 import resource
 import signal
+from typing import Iterator
 
 from enhancements.exceptions import ContextManagerTimeout
 
 
 @contextlib.contextmanager
-def memorylimit(limit, restype=resource.RLIMIT_AS):
+def memorylimit(limit: int, restype: int = resource.RLIMIT_AS) -> Iterator[None]:
     soft_limit, hard_limit = resource.getrlimit(restype)
     resource.setrlimit(restype, (limit, hard_limit))  # set soft limit
     try:
