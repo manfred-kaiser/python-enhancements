@@ -30,7 +30,6 @@ import importlib
 import logging
 import argparse
 import inspect
-from collections import Iterable
 from types import ModuleType
 
 from typing import (
