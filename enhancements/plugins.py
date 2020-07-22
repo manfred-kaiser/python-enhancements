@@ -17,9 +17,9 @@ from enhancements.modules import ModuleParserPlugin
 
 class LogModule(ModuleParserPlugin):
 
-    LOGFILE = None
+    LOGFILE: Optional[Text] = None
 
-    def __init__(self, cmdargs: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None):
+    def __init__(self, cmdargs: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> None:
         super().__init__(cmdargs, namespace)
 
         root_logger = logging.getLogger()
@@ -44,7 +44,9 @@ class LogModule(ModuleParserPlugin):
                 logging.error(error)
 
     @classmethod
-    def parser_arguments(cls):
+    def parser_arguments(cls) -> None:
+        if not cls.PARSER:
+            return
         cls.PARSER.add_argument(
             '-d',
             '--debug',
@@ -69,7 +71,7 @@ class LogModule(ModuleParserPlugin):
             )
 
     @staticmethod
-    def create_log_dir(logfile: Text):
+    def create_log_dir(logfile: Text) -> bool:
         usefilelogger = True
         logpath = os.path.dirname(logfile)
         if not os.path.exists(logpath):
@@ -83,16 +85,18 @@ class LogModule(ModuleParserPlugin):
 
 class ConfigModule(ModuleParserPlugin):
 
-    CONFIGFILE = None
-    BASEPACKAGE = None
+    CONFIGFILE: Optional[Text] = None
+    BASEPACKAGE: Optional[Text] = None
 
-    def __init__(self, cmdargs: List[Text] = None, namespace: Optional[argparse.Namespace] = None):
+    def __init__(self, cmdargs: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> None:
         super().__init__(cmdargs, namespace)
         if not self.args.config.configfiles and self.CONFIGFILE:
             self.args.config.append(self.CONFIGFILE)
 
     @classmethod
-    def parser_arguments(cls):
+    def parser_arguments(cls) -> None:
+        if not cls.PARSER:
+            return
         cls.PARSER.add_argument(
             '-c',
             '--config',

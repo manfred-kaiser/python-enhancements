@@ -11,6 +11,7 @@ from typing import (
     List,
     Union,
     Text,
+    Type,
     Iterable
 )
 
@@ -130,12 +131,16 @@ class ExtendedConfigParser(SafeConfigParser):
             return self._getmodule_option(section, option)
         return self._getmodule_section(section)
 
-    def getplugins(self, module_prefix) -> List[Module]:
+    def getplugins(self, module_prefix: Union[Text, Module, Type[Module]]) -> List[Module]:
         plugins = []
-        if isinstance(module_prefix, Module) or issubclass(module_prefix, Module):
+        if isinstance(module_prefix, str):
+            pass
+        elif isinstance(module_prefix, Module) or (inspect.isclass(module_prefix) and issubclass(module_prefix, Module)):  # type: ignore
             if module_prefix.CONFIG_PREFIX:
                 module_prefix = module_prefix.CONFIG_PREFIX
-        elif not isinstance(module_prefix, str):
+            else:
+                raise ValueError("Not a valid module prefix. Only strings and module are supported.")
+        else:
             raise ValueError("Not a valid module prefix. Only strings and module are supported.")
 
         for section in self.sections():
