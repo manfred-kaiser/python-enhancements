@@ -30,6 +30,7 @@ import importlib
 import logging
 import argparse
 import inspect
+from collections import Iterable
 from types import ModuleType
 
 from typing import (
@@ -111,19 +112,24 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
         return modules
     try:
         # Wurde keine Liste übergeben, wird "modulelist" in eine Liste umgewandelt, damit die Verarbeitung gleich ist
-        modulelist_it: Sequence[Union[Text, Type['Module']]] = modulelist if isinstance(modulelist, list) else [modulelist]
+        modulelist_it: Sequence[Union[Text, Type['Module']]]
+        if not isinstance(modulelist, list):
+            modulelist_it = [modulelist]
+        else:
+            modulelist_it = modulelist
 
         for modulearg in modulelist_it:
-            if isinstance(modulearg, type) and issubclass(modulearg, Module):
-                # Wenn bereits ein Modul übergeben wurd, wird dieses gleich der Ergebnisliste hinzugefügt
-                modules.append(modulearg)
-            else:
+            if isinstance(modulearg, str):
                 modname, funcname = _split_module_string(modulearg, moduleloader)
                 module = _load_module_from_string(modname, modules_from_file)
                 handlerclass = _get_valid_module_class(module, funcname)
                 if handlerclass:
                     modules.append(handlerclass)
-
+            elif inspect.isclass(modulearg) and issubclass(modulearg, Module):  # type: ignore
+                # Wenn bereits ein Modul übergeben wurd, wird dieses gleich der Ergebnisliste hinzugefügt
+                modules.append(modulearg)
+            else:
+                pass
     except ImportError:
         raise ModuleError
     except Exception:
