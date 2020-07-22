@@ -3,7 +3,8 @@ To use simply copy ClassPropertyMeta and classproperty into your project
 """
 from typing import (
     Any,
-    Text
+    Text,
+    Optional
 )
 
 
@@ -50,22 +51,22 @@ class classproperty():
         self.fget = self._fix_function(fget)
         self.fset = None if fset is None else self._fix_function(fset)
 
-    def __get__(self, instance, owner=None):
-        if not issubclass(type(owner), ClassPropertyMeta):
+    def __get__(self, instance: Any, owner: Optional[ClassPropertyMeta] = None) -> Any:
+        if not issubclass(type(owner), ClassPropertyMeta):  # type: ignore
             raise TypeError(
                 f"Class {owner} does not extend from the required "
                 f"ClassPropertyMeta metaclass"
             )
         return self.fget.__get__(None, owner)()
 
-    def __set__(self, owner, value):
+    def __set__(self, owner: ClassPropertyMeta, value: Any) -> Any:
         if not self.fset:
             raise AttributeError("can't set attribute")
-        if not isinstance(owner, ClassPropertyMeta):
+        if not isinstance(owner, ClassPropertyMeta):  # type: ignore
             owner = type(owner)
         return self.fset.__get__(None, owner)(value)
 
-    def setter(self, fset):
+    def setter(self, fset) -> 'classproperty':
         self.fset = self._fix_function(fset)
         return self
 
