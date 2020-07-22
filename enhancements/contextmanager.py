@@ -20,9 +20,10 @@ def memorylimit(limit: int, restype: int = resource.RLIMIT_AS) -> Iterator[None]
 
 @contextlib.contextmanager
 def time_limit(seconds: int):
-    def signal_handler(signum, frame):
+    # TODO: deprecated, raise error or warning
+    def signal_handler(signum, frame):  # type: ignore
         raise ContextManagerTimeout("Timed out!")
-    signal.signal(signal.SIGALRM, signal_handler)
+    signal.signal(signal.SIGALRM, signal_handler)  # type: ignore
     signal.alarm(seconds)
     try:
         yield
