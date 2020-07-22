@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
 
 import binascii
+
+from typing import (
+    Text,
+    Union,
+    Optional
+)
+
 from enhancements.modules import Module
 
 
 class ExampleModule(Module):
 
-    def execute(self, data):
+    def execute(self, data: Union[bytes, Text]) -> Optional[Union[bytes, Text]]:
         pass
 
 
 class HexDump(ExampleModule):
 
     @classmethod
-    def parser_arguments(cls):
+    def parser_arguments(cls) -> None:
+        if not cls.PARSER:
+            return
         cls.PARSER.add_argument(
             '--hexwidth',
             dest='hexwidth',
@@ -22,7 +31,7 @@ class HexDump(ExampleModule):
             help='width of the hexdump in chars'
         )
 
-    def execute(self, data):
+    def execute(self, data: Union[bytes, Text]) -> Optional[Union[bytes, Text]]:
         result = []
 
         if isinstance(data, str):

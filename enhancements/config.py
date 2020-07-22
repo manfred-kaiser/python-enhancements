@@ -102,7 +102,7 @@ class ExtendedConfigParser(SafeConfigParser):
     def getlist(self, section: Text, option: Text, sep: Text = ',', chars: Optional[Text] = None) -> List[Text]:
         return [chunk.strip(chars) for chunk in self.get(section, option).split(sep)]
 
-    def _getmodule_option(self, section: Text, option: Text) -> Module:
+    def _getmodule_option(self, section: Text, option: Text) -> Type[Module]:
         """ get a module class from config file
         """
         module = self.get(section, option)
@@ -117,7 +117,7 @@ class ExtendedConfigParser(SafeConfigParser):
             )
         return values[0]
 
-    def _getmodule_section(self, section: Text) -> Optional[Module]:
+    def _getmodule_section(self, section: Text) -> Optional[Type[Module]]:
         if not self.has_section(section):
             raise ValueError('Config section does not exist! Module not loaded.')
         if not self.has_option(section, 'enabled') or not self.has_option(section, 'class'):
@@ -126,12 +126,12 @@ class ExtendedConfigParser(SafeConfigParser):
             return None
         return self.getmodule(section, 'class')
 
-    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Module]:
+    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Type[Module]]:
         if option:
             return self._getmodule_option(section, option)
         return self._getmodule_section(section)
 
-    def getplugins(self, module_prefix: Union[Text, Module, Type[Module]]) -> List[Module]:
+    def getplugins(self, module_prefix: Union[Text, Module, Type[Module]]) -> List[Type[Module]]:
         plugins = []
         if isinstance(module_prefix, str):
             pass
