@@ -113,7 +113,8 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
         # Wurde keine Liste übergeben, wird "modulelist" in eine Liste umgewandelt, damit die Verarbeitung gleich ist
         modulelist_it: Sequence[Union[Text, Type['Module']]]
         if not isinstance(modulelist, list):
-            modulelist_it = [modulelist]
+            # type checking not possible with pep484 (https://github.com/python/typing/issues/256)
+            modulelist_it = [modulelist]  # type: ignore
         else:
             modulelist_it = modulelist
 
@@ -208,8 +209,8 @@ class Module(metaclass=ClassPropertyMeta):
                 action = actions.get(param_name)
                 if not action:
                     raise KeyError('keyword argument {} has no param'.format(param_name))
-                # TODO: check if it works!!!
-                if hasattr(action, 'type') and not isinstance(param_value, action.type):
+                # check if it is an instance of the argument type, ignore mypy error because of false positive
+                if hasattr(action, 'type') and not isinstance(param_value, action.type):  # type: ignore
                     raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
                 setattr(self.args, param_name, param_value)
 
