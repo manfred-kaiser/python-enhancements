@@ -10,7 +10,9 @@ from typing import (
     Optional,
     List,
     Union,
-    Text
+    Text,
+    Type,
+    Iterable
 )
 
 from enhancements.modules import get_module_class, Module
@@ -72,11 +74,12 @@ class ExtendedConfigParser(SafeConfigParser):
             logging.debug("Using default config: %s", self.default_config)
             self.append(self.default_config)
 
-    def read(self, configpath):
+    def read(self, filenames: Union[Union[str, os.PathLike[str]], Iterable[Union[str, os.PathLike[str]]]], encoding: Optional[Text] = 'utf-8') -> List[Text]:
         try:
-            super(ExtendedConfigParser, self).read(configpath, encoding='utf-8')
+            return super(ExtendedConfigParser, self).read(filenames, encoding=encoding)
         except Exception:
-            logging.exception("error reading %s", configpath)
+            logging.exception("error reading %s", filenames)
+            return []
 
     def copy(self) -> 'ExtendedConfigParser':
         """ create a copy of the current config
@@ -99,7 +102,7 @@ class ExtendedConfigParser(SafeConfigParser):
     def getlist(self, section: Text, option: Text, sep: Text = ',', chars: Optional[Text] = None) -> List[Text]:
         return [chunk.strip(chars) for chunk in self.get(section, option).split(sep)]
 
-    def _getmodule_option(self, section: Text, option: Text) -> Module:
+    def _getmodule_option(self, section: Text, option: Text) -> Type[Module]:
         """ get a module class from config file
         """
         module = self.get(section, option)
@@ -114,7 +117,7 @@ class ExtendedConfigParser(SafeConfigParser):
             )
         return values[0]
 
-    def _getmodule_section(self, section: Text) -> Optional[Module]:
+    def _getmodule_section(self, section: Text) -> Optional[Type[Module]]:
         if not self.has_section(section):
             raise ValueError('Config section does not exist! Module not loaded.')
         if not self.has_option(section, 'enabled') or not self.has_option(section, 'class'):
@@ -123,17 +126,21 @@ class ExtendedConfigParser(SafeConfigParser):
             return None
         return self.getmodule(section, 'class')
 
-    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Module]:
+    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Type[Module]]:
         if option:
             return self._getmodule_option(section, option)
         return self._getmodule_section(section)
 
-    def getplugins(self, module_prefix) -> List[Module]:
+    def getplugins(self, module_prefix: Union[Text, Module, Type[Module]]) -> List[Type[Module]]:
         plugins = []
-        if isinstance(module_prefix, Module) or issubclass(module_prefix, Module):
+        if isinstance(module_prefix, str):
+            pass
+        elif isinstance(module_prefix, Module) or (inspect.isclass(module_prefix) and issubclass(module_prefix, Module)):  # type: ignore
             if module_prefix.CONFIG_PREFIX:
                 module_prefix = module_prefix.CONFIG_PREFIX
-        elif not isinstance(module_prefix, str):
+            else:
+                raise ValueError("Not a valid module prefix. Only strings and module are supported.")
+        else:
             raise ValueError("Not a valid module prefix. Only strings and module are supported.")
 
         for section in self.sections():
