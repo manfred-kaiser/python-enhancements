@@ -1,3 +1,5 @@
+# type: ignore
+
 import os
 from types import ModuleType
 import pytest
@@ -95,6 +97,24 @@ def test_module_parser():
         parser.parse_args(['--notvalid'])
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 2
+
+
+def test_module_parser_default_1():
+    parser = ModuleParser(default=HexDump, baseclass=ExampleModule, baseclass_as_default=False)
+    args = parser.parse_args(['--hexwidth', '8'])
+    assert len(args.modules) == 1
+    hex_dump_module = args.modules[0]
+    assert issubclass(hex_dump_module, ExampleModule)
+    assert hex_dump_module.PARSER._actions[0].dest == 'hexwidth'
+
+
+def test_module_parser_default_2():
+    parser = ModuleParser(default=ExampleModule, baseclass=ExampleModule)
+    args = parser.parse_args(['-m', 'enhancements.examples.HexDump'])
+    assert len(args.modules) == 2
+    hex_dump_module = args.modules[1]
+    assert issubclass(hex_dump_module, ExampleModule)
+    assert hex_dump_module.PARSER._actions[0].dest == 'hexwidth'
 
 
 def test_module():

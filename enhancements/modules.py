@@ -257,14 +257,13 @@ class ModuleParser(_ModuleArgumentParser):
         self,
         default: Optional[Union[Type[Module], Tuple[Type[Module], ...]]] = None,
         baseclass: Optional[Union[Type[Module], Tuple[Type[Module], ...]]] = None,
-        replace_default: bool = False,
+        baseclass_as_default: bool = True,
         modules_from_file: bool = False,
         **kwargs: Any
     ) -> None:
-        if default is None:
-            default = ()
         if baseclass is None:
             baseclass = ()
+
         # check if baseclass is set and baseclasses is tuple or subclass of Module
         if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, Module)):  # type: ignore
             raise ValueError("baseclass must be tuple or subclass of Module")
@@ -276,8 +275,13 @@ class ModuleParser(_ModuleArgumentParser):
         self._module_parsers: Set[argparse.ArgumentParser] = {self}
         self._plugins: Dict[Type[ModuleParserPlugin], Optional[Module]] = {}
 
-        self.default_class = default if isinstance(baseclass, default) else (baseclass,)
         self.baseclasses: Tuple[Type[Module], ...] = self._get_baseclasses(baseclass)
+
+        if default is None:
+            default = self.baseclasses if baseclass_as_default else ()
+        if not isinstance(default, tuple):
+            default = (default, )
+        self.default_class = list(default)
 
         if self.baseclasses:
             self.add_argument(
@@ -285,15 +289,13 @@ class ModuleParser(_ModuleArgumentParser):
                 '--module',
                 dest='modules',
                 action=append_modules(self),
-                default=list(self.default_class) if self.default_class and not replace_default else [],
+                default=self.default_class,
                 help='Module to parse, modify data'
             )
 
     def _get_baseclasses(self, baseclass: Union[Type[Module], Tuple[Type[Module], ...]]) -> Tuple[Type[Module], ...]:
         # set default as baseclass if baseclass is not set
         _baseclasses: List[Type[Module]] = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
-        if not _baseclasses and self.default_class:
-            _baseclasses.extend(self.default_class)
         # self.baseclasses must be tuple, because issubclass requires tuple and not list
         baseclasses = tuple([bcls for bcls in _baseclasses if bcls])
 
@@ -377,7 +379,6 @@ class ModuleParser(_ModuleArgumentParser):
         return moduleparsers
 
     def _check_value(self, action: Any, value: Any) -> None:
-        # TODO: chech if mehtod is used
         pass
 
     def _create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None):
