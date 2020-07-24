@@ -98,6 +98,10 @@ def test_module_parser():
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 2
 
+    with pytest.raises(ModuleError) as pytest_wrapped_moderr:
+        parser.parse_args(['-m', 'enhancements.examples.HexDump1'])
+    assert pytest_wrapped_moderr.type == ModuleError
+
 
 def test_module_parser_default_1():
     parser = ModuleParser(default=HexDump, baseclass=ExampleModule, baseclass_as_default=False)

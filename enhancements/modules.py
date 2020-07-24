@@ -30,6 +30,7 @@ import importlib
 import logging
 import argparse
 import inspect
+import traceback
 from types import ModuleType
 
 from typing import (
@@ -135,8 +136,7 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
     except Exception:
         # in case of an exception delete all loaded modules
         # TODO: raise error instead of returning empty modules
-        logging.exception("Unable to load module")
-        del modules[:]
+        raise ModuleError(message=traceback.format_exc())
     return modules
 
 

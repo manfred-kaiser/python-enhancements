@@ -1,3 +1,5 @@
+# type: ignore
+
 import pytest
 from enhancements.classproperty import classproperty
 
