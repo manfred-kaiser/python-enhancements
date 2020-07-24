@@ -135,7 +135,6 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
         raise ModuleError
     except Exception:
         # in case of an exception delete all loaded modules
-        # TODO: raise error instead of returning empty modules
         raise ModuleError(message=traceback.format_exc())
     return modules
 
