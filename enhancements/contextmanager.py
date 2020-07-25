@@ -3,12 +3,14 @@
 import contextlib
 import resource
 import signal
+from typing import Iterator
+import warnings
 
 from enhancements.exceptions import ContextManagerTimeout
 
 
 @contextlib.contextmanager
-def memorylimit(limit, restype=resource.RLIMIT_AS):
+def memorylimit(limit: int, restype: int = resource.RLIMIT_AS) -> Iterator[None]:
     soft_limit, hard_limit = resource.getrlimit(restype)
     resource.setrlimit(restype, (limit, hard_limit))  # set soft limit
     try:
@@ -19,9 +21,10 @@ def memorylimit(limit, restype=resource.RLIMIT_AS):
 
 @contextlib.contextmanager
 def time_limit(seconds: int):
-    def signal_handler(signum, frame):
+    def signal_handler(signum, frame):  # type: ignore
         raise ContextManagerTimeout("Timed out!")
-    signal.signal(signal.SIGALRM, signal_handler)
+    warnings.warn("time_limit is deprecated! please use the stopit package", DeprecationWarning)
+    signal.signal(signal.SIGALRM, signal_handler)  # type: ignore
     signal.alarm(seconds)
     try:
         yield

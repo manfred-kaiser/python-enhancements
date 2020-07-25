@@ -1,3 +1,5 @@
+# type: ignore
+
 import pytest
 from enhancements.classproperty import classproperty
 
@@ -35,6 +37,6 @@ def test_classproperty():
 
 def test_classproperty_failed():
     with pytest.raises(TypeError):
-        TestClassInvalid.name
+        print(TestClassInvalid.name)
     with pytest.raises(AttributeError):
         TestClass.name = 1
