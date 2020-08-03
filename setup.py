@@ -18,7 +18,7 @@ setup(
     long_description_content_type='text/markdown',
     keywords="development configparser argparse",
     python_requires='>= 3.6',
-    packages=find_packages(exclude=("tests",)),
+    packages=find_packages(exclude=("tests",)),  # type: ignore
     url="https://enhancements.readthedocs.io/",
     project_urls={
         'Source': 'https://github.com/manfred-kaiser/python-enhancements',

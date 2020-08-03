@@ -199,6 +199,7 @@ class Module(metaclass=ClassPropertyMeta):
     CONFIG_PREFIX: Optional[Text] = None
 
     def __init__(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs: Any) -> None:
+        self.args: argparse.Namespace
         self.args, _ = self.PARSER.parse_known_args(args, namespace)
 
         actions = {action.dest: action for action in self.PARSER._actions}  # type: ignore
@@ -414,9 +415,12 @@ class ModuleParser(_ModuleArgumentParser):
         parser = argparse.ArgumentParser(parents=list(self._module_parsers), **self.__kwargs)
         return parser
 
-    def parse_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> Optional[argparse.Namespace]:  # type: ignore
+    def parse_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> argparse.Namespace:  # type: ignore
         parser = self._create_parser(args=args, namespace=namespace)
-        return parser.parse_args(args, namespace)
+        args_namespace = parser.parse_args(args, namespace)
+        if not args_namespace:
+            return argparse.Namespace()
+        return args_namespace
 
     def parse_known_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> Tuple[argparse.Namespace, List[str]]:
         parser = self._create_parser(args=args, namespace=namespace)
