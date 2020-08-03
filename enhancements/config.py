@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import inspect
 import logging
 import os
@@ -22,7 +22,7 @@ class DefaultConfigNotFound(Exception):
     pass
 
 
-class ExtendedConfigParser(SafeConfigParser):
+class ExtendedConfigParser(ConfigParser):
 
     def __init__(
         self,
