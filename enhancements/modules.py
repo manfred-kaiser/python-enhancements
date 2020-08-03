@@ -122,7 +122,8 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
         for modulearg in modulelist_it:
             if isinstance(modulearg, str):
                 modname, funcname = _split_module_string(modulearg, moduleloader)
-                module = _load_module_from_string(modname, modules_from_file)
+                files_allowed = modules_from_file or (moduleloader is not None and moduleloader.modules_from_file)
+                module = _load_module_from_string(modname, files_allowed)
                 handlerclass = _get_valid_module_class(module, funcname)
                 if handlerclass:
                     modules.append(handlerclass)
