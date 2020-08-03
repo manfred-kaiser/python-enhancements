@@ -226,14 +226,6 @@ class Module(metaclass=ClassPropertyMeta):
     def parser_arguments(cls) -> None:
         pass
 
-    @classmethod
-    def prepare_module(cls) -> None:
-        raise DeprecationWarning('prepare_module is deprecated and should not be used')
-
-    @classmethod
-    def get_modules(cls) -> Optional[List[Tuple[argparse.Action, Any]]]:
-        raise DeprecationWarning('get_modules is deprecated and should not be used')
-
     @classproperty
     def MODULES(cls):
         if '_modules' not in cls.__dict__:
