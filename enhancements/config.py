@@ -7,12 +7,12 @@ import os
 import pickle  # nosec
 import pkg_resources
 from typing import (
+    Any,
     Optional,
     List,
     Union,
     Text,
-    Type,
-    Iterable
+    Type
 )
 
 from enhancements.modules import get_module_class, Module
@@ -74,7 +74,7 @@ class ExtendedConfigParser(SafeConfigParser):
             logging.debug("Using default config: %s", self.default_config)
             self.append(self.default_config)
 
-    def read(self, filenames: Union[Union[str, os.PathLike[str]], Iterable[Union[str, os.PathLike[str]]]], encoding: Optional[Text] = 'utf-8') -> List[Text]:
+    def read(self, filenames: Any, encoding: Optional[Text] = 'utf-8') -> List[Text]:  # type: ignore
         try:
             return super(ExtendedConfigParser, self).read(filenames, encoding=encoding)
         except Exception:
