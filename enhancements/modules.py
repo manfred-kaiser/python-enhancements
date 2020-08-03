@@ -193,25 +193,22 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
 
 class Module(metaclass=ClassPropertyMeta):
-    PARSER: Optional[_ModuleArgumentParser] = None
-    MODULES: Optional[List[Tuple[argparse.Action, Any]]] = None
+    _parser: Optional[_ModuleArgumentParser] = None
+    _modules: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
     def __init__(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs: Any) -> None:
-        if not self.PARSER:
-            self.prepare_module()
-        if self.PARSER:
-            self.args, _ = self.PARSER.parse_known_args(args, namespace)
+        self.args, _ = self.PARSER.parse_known_args(args, namespace)
 
-            actions = {action.dest: action for action in self.PARSER._actions}  # type: ignore
-            for param_name, param_value in kwargs.items():
-                action = actions.get(param_name)
-                if not action:
-                    raise KeyError('keyword argument {} has no param'.format(param_name))
-                # check if it is an instance of the argument type, ignore mypy error because of false positive
-                if hasattr(action, 'type') and not isinstance(param_value, action.type):  # type: ignore
-                    raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
-                setattr(self.args, param_name, param_value)
+        actions = {action.dest: action for action in self.PARSER._actions}  # type: ignore
+        for param_name, param_value in kwargs.items():
+            action = actions.get(param_name)
+            if not action:
+                raise KeyError('keyword argument {} has no param'.format(param_name))
+            # check if it is an instance of the argument type, ignore mypy error because of false positive
+            if hasattr(action, 'type') and not isinstance(param_value, action.type):  # type: ignore
+                raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
+            setattr(self.args, param_name, param_value)
 
     @classmethod
     def add_module(cls, *args: Any, **kwargs: Any):
@@ -231,13 +228,26 @@ class Module(metaclass=ClassPropertyMeta):
 
     @classmethod
     def prepare_module(cls) -> None:
-        cls.MODULES = []  # type: ignore
-        cls.PARSER = _ModuleArgumentParser(add_help=False, description=cls.__name__)  # type: ignore
-        cls.parser_arguments()
+        raise DeprecationWarning('prepare_module is deprecated and should not be used')
 
     @classmethod
     def get_modules(cls) -> Optional[List[Tuple[argparse.Action, Any]]]:
-        return cls.MODULES
+        raise DeprecationWarning('get_modules is deprecated and should not be used')
+
+    @classproperty
+    def MODULES(cls):
+        if '_modules' not in cls.__dict__:
+            cls._modules = []
+        return cls._modules
+
+    @classproperty
+    def PARSER(cls) -> _ModuleArgumentParser:
+        if '_parser' not in cls.__dict__:
+            cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)  # type: ignore
+            cls.parser_arguments()
+        if not cls._parser:
+            raise ValueError('failed to create ModuleParser for {}'.format(cls))
+        return cls._parser
 
     @classproperty
     def config_section(cls) -> Text:  # pylint: disable=E0213
@@ -366,13 +376,11 @@ class ModuleParser(_ModuleArgumentParser):
                 if module is baseclass:
                     logging.error('module must not be baseclass!')
                     raise ModuleError(module, baseclass)
-                module.prepare_module()
-                if module.PARSER:
-                    moduleparsers.append(module.PARSER)
+                moduleparsers.append(module.PARSER)
 
                 try:
                     parsed_subargs, _ = module.PARSER.parse_known_args(args=args, namespace=namespace)
-                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.get_modules()))
+                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.MODULES))
                 except TypeError:
                     logging.exception("Unable to load modules")
         return moduleparsers
@@ -390,7 +398,6 @@ class ModuleParser(_ModuleArgumentParser):
                     raise ModuleError(module, self.baseclasses)
                 if module is self.baseclasses:
                     raise ModuleError(module, self.baseclasses)
-                module.prepare_module()
                 self.add_parser(module.PARSER)
                 parsed_sub_args = module.PARSER.parse_known_args(args=args, namespace=namespace)
                 submods = self.get_sub_modules(parsed_sub_args, args, namespace, parsed_args.modules, use_modules=True)
@@ -404,9 +411,7 @@ class ModuleParser(_ModuleArgumentParser):
 
         # load plugins
         for plugin in self._plugins:
-            plugin.prepare_module()
-            if plugin.PARSER:
-                self.add_parser(plugin.PARSER)
+            self.add_parser(plugin.PARSER)
 
         # initialize plugins
         for plugin in self._plugins:
