@@ -1,7 +1,8 @@
 import inspect
-
+import operator
 from typing import (
     Any,
+    Callable,
     Dict,
     Union,
     Text,
@@ -47,6 +48,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
 
     config: ExtendedConfigParser
     CONFIGFILE: Optional[Text] = None
+    COMPERATOR: Callable[[Any, Any], bool] = operator.lt
 
     class Action():
         def __init__(self, cls: Type['BaseReturnCode'], result: 'BaseReturnCode.Result') -> None:
@@ -137,7 +139,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             value: 'BaseReturnCode.Result' = cls.convert(value_arg)
             if value.skip:
                 continue
-            if result < value:
+            if cls.COMPERATOR(result, value):
                 result = value
         return result
 
