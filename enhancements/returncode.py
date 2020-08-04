@@ -1,15 +1,12 @@
-import inspect
 import operator
 from typing import (
     Any,
     Callable,
     Dict,
-    Union,
     Text,
     Type,
     Tuple,
-    Optional,
-    List
+    Optional
 )
 
 from enhancements.config import ExtendedConfigParser
@@ -103,15 +100,8 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
                 raise ValueError('Class not configured')
             return cls.BASERESULT.convert(value)
 
-    def __init__(self, result: 'BaseReturnCode.Result', message: Optional[Union[Text, List[Text]]] = None, rawoutput: Optional[Text] = None) -> None:
-        self._result: 'BaseReturnCode.Result' = result
-        self.message = []
-        if message:
-            if isinstance(message, list):
-                self.message.extend(message)
-            else:
-                self.message.append(message)
-        self.rawoutput = rawoutput
+    def __init__(self, result: 'BaseReturnCode.Result') -> None:
+        self._result: 'BaseReturnCode.Result' = self.convert(result)
 
     @property
     def result(self) -> 'BaseReturnCode.Result':
@@ -139,13 +129,22 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             value: 'BaseReturnCode.Result' = cls.convert(value_arg)
             if value.skip:
                 continue
-            if cls.COMPERATOR(result, value):
+            if cls._compare(result, value):
                 result = value
         return result
 
-    def set_result(self, value: 'BaseReturnCode.Result', force: bool = False):
-        if self._result < value or force:
-            self._result = value
+    @classmethod
+    def _compare(cls, a: Any, b: Any) -> bool:
+        return cls.COMPERATOR(a, b)
+
+    def set_result(self, value: 'BaseReturnCode.Result', force: bool = False) -> bool:
+        if self._compare(self._result, value) or force:
+            new_value = self.convert(value)
+            if new_value.skip and not force:
+                return False
+            self._result = new_value
+            return True
+        return False
 
     @classmethod
     def get_results(cls):
@@ -153,8 +152,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
 
     @classmethod
     def get_result_types(cls):
-        results = inspect.getmembers(cls, lambda a: isinstance(a, cls.Result))
-        return [r[1].string for r in results]
+        return [getattr(cls, x).string for x in cls.__dict__ if isinstance(getattr(cls, x), cls.Result)]
 
     @classmethod
     def convert(cls, value: Any) -> 'BaseReturnCode.Result':
