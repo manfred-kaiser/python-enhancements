@@ -62,7 +62,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
 
     config: ExtendedConfigParser
     CONFIGFILE: Optional[Text] = None
-    COMPERATOR: Callable[[Any, Any], bool] = operator.lt
+    COMPERATOR: Callable[[Any, Any], bool] = operator.gt
 
     class Action():
         def __init__(self, cls: Type['BaseReturnCode'], result: 'BaseReturnCode.Result') -> None:
@@ -146,7 +146,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             value: 'BaseReturnCode.Result' = cls.convert(value_arg)
             if value.skip:
                 continue
-            if cls._compare(result, value):
+            if cls._compare(value, result):
                 result = value
         return result
 
@@ -155,7 +155,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         return cls.COMPERATOR(a, b)
 
     def set_result(self, value: 'BaseReturnCode.Result', force: bool = False) -> bool:
-        if self._compare(self._result, value) or force:
+        if self._compare(value, self._result) or force:
             new_value = self.convert(value)
             if new_value.skip and not force:
                 return False
