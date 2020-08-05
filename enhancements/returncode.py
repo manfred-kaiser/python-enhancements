@@ -16,12 +16,23 @@ class MissingInnerResultClass(Exception):
     pass
 
 
+class WrongResultSubclass(Exception):
+    pass
+
+
+class WrongResultValue(Exception):
+    pass
+
+
 class ReturnCodeMeta(type):
 
     def __new__(cls, name: Text, bases: Tuple[type], dct: Dict[str, Any]):
         x: Type['BaseReturnCode'] = super().__new__(cls, name, bases, dct)
         if 'Result' not in x.__dict__:
-            raise MissingInnerResultClass()
+            raise MissingInnerResultClass('{} must have a inner Result class'.format(x.__name__))
+        result_basesclasses = [b.__qualname__ for b in x.Result.__bases__]
+        if 'BaseReturnCode.Result' not in result_basesclasses and 'int' not in result_basesclasses:
+            raise WrongResultSubclass()
         x.Result.BASERESULT = x
         if x.CONFIGFILE:
             configfile = ExtendedConfigParser(defaultini=x.CONFIGFILE)
@@ -38,6 +49,12 @@ class ReturnCodeMeta(type):
                 )
                 setattr(x, result_name.capitalize(), result_value)
                 setattr(x, result_name.lower(), x.Action(x, result_value))
+        baseclass_dict = {b.__qualname__: b for b in x.__bases__}
+        baseclass: Optional[Type['BaseReturnCode']] = baseclass_dict.get('BaseReturnCode', None)
+        if baseclass:
+            for r in [a for a in x.__dict__.values() if isinstance(a, baseclass.Result)]:
+                if not isinstance(r, x.Result):
+                    raise WrongResultValue()
         return x
 
 
@@ -148,11 +165,11 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
 
     @classmethod
     def get_results(cls):
-        return {int(getattr(cls, x)): getattr(cls, x) for x in cls.__dict__ if isinstance(getattr(cls, x), cls.Result)}
+        return {int(x): x for x in cls.__dict__.values() if isinstance(x, cls.Result)}
 
     @classmethod
     def get_result_types(cls):
-        return [getattr(cls, x).string for x in cls.__dict__ if isinstance(getattr(cls, x), cls.Result)]
+        return [x.string for x in cls.__dict__.values() if isinstance(x, cls.Result)]
 
     @classmethod
     def convert(cls, value: Any) -> 'BaseReturnCode.Result':

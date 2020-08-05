@@ -1,4 +1,4 @@
-from enhancements.returncode import BaseReturnCode, MissingInnerResultClass
+from enhancements.returncode import BaseReturnCode, MissingInnerResultClass, WrongResultSubclass, WrongResultValue
 import pytest
 
 
@@ -64,3 +64,18 @@ def test_missing_inner_result_class():
     with pytest.raises(MissingInnerResultClass):
         class CustomScanResultMissingResultClass(BaseReturnCode):
             pass
+
+
+def test_wrong_subclass():
+    with pytest.raises(WrongResultSubclass):
+        class CustomScanWrongResultClass(BaseReturnCode):
+            class Result():
+                pass
+
+
+def test_wrong_result_subclass():
+    with pytest.raises(WrongResultValue):
+        class CustomScanWrongResultClass(BaseReturnCode):
+            class Result(BaseReturnCode.Result):
+                pass
+            Success = BaseReturnCode.Result('success', 10)
