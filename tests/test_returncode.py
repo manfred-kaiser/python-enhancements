@@ -79,3 +79,18 @@ def test_wrong_result_subclass():
             class Result(BaseReturnCode.Result):
                 pass
             Success = BaseReturnCode.Result('success', 10)
+
+
+def test_lt_comperator():
+    import operator
+
+    class CustomScanResult(BaseReturnCode):
+        class Result(BaseReturnCode.Result):
+            pass
+        COMPERATOR = operator.lt
+
+        Success = Result('success', 12)
+        Skip = Result('skip', 11, skip=True)
+        Error = Result('error', 11)
+
+    assert CustomScanResult.get_score(CustomScanResult.Success, CustomScanResult.Error) == CustomScanResult.Error
