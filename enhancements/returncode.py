@@ -176,10 +176,9 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         results = cls.get_results()
         if isinstance(value, cls.Result):
             return value
-        elif isinstance(value, int):
-            if value in results:
-                return results[value]
-        elif isinstance(value, str):
+        if isinstance(value, int) and value in results:
+            return results[value]
+        if isinstance(value, str):
             for rating, result in results.items():
                 if value.lower() == result.string.lower():
                     return results[rating]
