@@ -48,7 +48,7 @@ class ExtendedConfigParser(ConfigParser):
             self.production_config = self.get('productionconfig', 'configpath')
 
         if env_name in os.environ:
-            self.append(os.environ[env_name])
+            self.production_config = os.environ[env_name]
 
         if self.production_config:
             self.append(self.production_config)
