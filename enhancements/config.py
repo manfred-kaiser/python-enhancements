@@ -100,7 +100,7 @@ class ExtendedConfigParser(ConfigParser):
             )
 
     def getlist(self, section: Text, option: Text, sep: Text = ',', chars: Optional[Text] = None) -> List[Text]:
-        return [chunk.strip(chars) for chunk in self.get(section, option).split(sep)]
+        return [chunk.strip(chars) for chunk in self.get(section, option).split(sep) if chunk]
 
     def _getmodule_option(self, section: Text, option: Text) -> Type[Module]:
         """ get a module class from config file
