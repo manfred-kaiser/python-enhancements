@@ -30,12 +30,14 @@ class ExtendedConfigParser(ConfigParser):
         defaultini: Text = 'default.ini',
         package: Optional[Text] = None,
         env_name: Text = 'ENHANCED_CONFIG_FILE',
-        modules_from_file: bool = False
+        modules_from_file: bool = False,
+        ignore_missing_default_config: bool = False
     ):
         super(ExtendedConfigParser, self).__init__(allow_no_value=True)
         self.defaultini: Text = defaultini
         self.package: Optional[Text] = package
-        self.default_config: Text = self._get_default_config()
+        self.ignore_missing_default_config: bool = ignore_missing_default_config
+        self.default_config: Optional[Text] = self._get_default_config()
         self.production_config: Optional[Text] = None
         self.configfiles: List[Text] = []
         self.modules_from_file: bool = modules_from_file
@@ -53,7 +55,7 @@ class ExtendedConfigParser(ConfigParser):
         if self.production_config:
             self.append(self.production_config)
 
-    def _get_default_config(self) -> Text:
+    def _get_default_config(self) -> Optional[Text]:
         packages = []
         if self.package:
             packages.append(self.package)
@@ -66,8 +68,10 @@ class ExtendedConfigParser(ConfigParser):
             defaultconfig = pkg_resources.resource_filename(packagename, '/'.join(('data', self.defaultini)))
             if os.path.isfile(defaultconfig):
                 return defaultconfig
-
-        raise DefaultConfigNotFound()
+        if not self.ignore_missing_default_config:
+            raise DefaultConfigNotFound()
+        logging.debug("mising default config")
+        return None
 
     def _read_default_config(self) -> None:
         if self.default_config:
@@ -100,7 +104,7 @@ class ExtendedConfigParser(ConfigParser):
             )
 
     def getlist(self, section: Text, option: Text, sep: Text = ',', chars: Optional[Text] = None) -> List[Text]:
-        return [chunk.strip(chars) for chunk in self.get(section, option).split(sep)]
+        return [chunk.strip(chars) for chunk in self.get(section, option).split(sep) if chunk]
 
     def _getmodule_option(self, section: Text, option: Text) -> Type[Module]:
         """ get a module class from config file
