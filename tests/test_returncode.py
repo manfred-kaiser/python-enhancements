@@ -1,5 +1,5 @@
 from enhancements.returncode import BaseReturnCode, MissingInnerResultClass, WrongResultSubclass, WrongResultValue
-import pytest
+import pytest  # type: ignore
 
 
 def test_custom_class():
@@ -56,26 +56,26 @@ def test_custom_class():
 
     assert CustomScanResult.Result.convert('success') == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # type: ignore
         CustomScanResult.convert('invalid')
 
 
 def test_missing_inner_result_class():
-    with pytest.raises(MissingInnerResultClass):
+    with pytest.raises(MissingInnerResultClass):  # type: ignore
         class CustomScanResultMissingResultClass(BaseReturnCode):
             pass
 
 
 def test_wrong_subclass():
-    with pytest.raises(WrongResultSubclass):
+    with pytest.raises(WrongResultSubclass):  # type: ignore
         class CustomScanWrongResultClass(BaseReturnCode):
-            class Result():
+            class Result():  # type: ignore
                 pass
 
 
 def test_wrong_result_subclass():
-    with pytest.raises(WrongResultValue):
-        class CustomScanWrongResultClass(BaseReturnCode):
+    with pytest.raises(WrongResultValue):  # type: ignore
+        class CustomScanWrongResultClass(BaseReturnCode):  # pyright: reportUnusedClass=false
             class Result(BaseReturnCode.Result):
                 pass
             Success = BaseReturnCode.Result('success', 10)
