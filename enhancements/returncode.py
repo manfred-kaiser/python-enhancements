@@ -29,7 +29,7 @@ class WrongResultValue(Exception):
 
 class ReturnCodeMeta(type):
 
-    def __new__(cls, name: Text, bases: Tuple[type], dct: Dict[str, Any]):
+    def __new__(cls, name: Text, bases: Tuple[type], dct: Dict[str, Any]) -> 'ReturnCodeMeta':
         x: Type['BaseReturnCode'] = cast(Type['BaseReturnCode'], super().__new__(cls, name, bases, dct))
         result_basesclasses = [b.__qualname__ for b in x.Result.__bases__]
         if 'BaseReturnCode.Result' not in result_basesclasses and 'int' not in result_basesclasses:
@@ -54,7 +54,7 @@ class ReturnCodeMeta(type):
         baseclass: Optional[Type['BaseReturnCode']] = baseclass_dict.get('BaseReturnCode', None)
         if baseclass:
             for r in [a for a in x.__dict__.values() if isinstance(a, baseclass.Result)]:
-                if not isinstance(r, x.Result):  # type: ignore
+                if not isinstance(r, x.Result):
                     raise WrongResultValue()
         return x
 
@@ -88,10 +88,10 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             result.skip = skip
             return result
 
-        def __str__(self):
+        def __str__(self) -> Text:
             return self.string
 
-        def __hash__(self):
+        def __hash__(self) -> int:
             return int(self)
 
         def __eq__(self, other: Any) -> bool:

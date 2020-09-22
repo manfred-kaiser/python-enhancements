@@ -7,6 +7,7 @@ import os
 import pickle  # nosec
 import pkg_resources
 from typing import (
+    cast,
     Any,
     Optional,
     List,
@@ -78,7 +79,7 @@ class ExtendedConfigParser(ConfigParser):
             logging.debug("Using default config: %s", self.default_config)
             self.append(self.default_config)
 
-    def read(self, filenames: Any, encoding: Optional[Text] = 'utf-8') -> List[Text]:  # type: ignore
+    def read(self, filenames: Any, encoding: Optional[Text] = 'utf-8') -> List[Text]:
         try:
             return super(ExtendedConfigParser, self).read(filenames, encoding=encoding)
         except Exception:
@@ -88,7 +89,7 @@ class ExtendedConfigParser(ConfigParser):
     def copy(self) -> 'ExtendedConfigParser':
         """ create a copy of the current config
         """
-        return pickle.loads(pickle.dumps(self))  # nosec
+        return cast('ExtendedConfigParser', pickle.loads(pickle.dumps(self)))  # nosec
 
     def append(self, configpath: Text) -> None:
         self.configfiles.append(configpath)
@@ -139,7 +140,7 @@ class ExtendedConfigParser(ConfigParser):
         plugins = []
         if isinstance(module_prefix, str):
             pass
-        elif isinstance(module_prefix, Module) or (inspect.isclass(module_prefix) and issubclass(module_prefix, Module)):  # type: ignore
+        elif isinstance(module_prefix, Module) or (inspect.isclass(module_prefix) and issubclass(module_prefix, Module)):
             if module_prefix.CONFIG_PREFIX:
                 module_prefix = module_prefix.CONFIG_PREFIX
             else:
