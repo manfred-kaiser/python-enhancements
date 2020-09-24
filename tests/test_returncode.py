@@ -1,5 +1,60 @@
-from enhancements.returncode import BaseReturnCode, MissingInnerResultClass, WrongResultSubclass, WrongResultValue
-import pytest
+from enhancements.returncode import BaseReturnCode, WrongResultSubclass, WrongResultValue
+import pytest  # type: ignore
+
+
+def test_default_result():
+    class DefaultResultClass(BaseReturnCode):
+        Success = BaseReturnCode.Result('success', 10)
+        Skip = BaseReturnCode.Result('skip', 11, skip=True)
+        Error = BaseReturnCode.Result('error', 12)
+
+    assert sorted(DefaultResultClass.get_results().keys()) == [10, 11, 12]
+    assert sorted(DefaultResultClass.get_result_types()) == ['error', 'skip', 'success']
+
+    assert DefaultResultClass.convert('success') == DefaultResultClass.Success
+    assert DefaultResultClass.convert('success') == 10
+
+    assert DefaultResultClass.Success == 'success'
+    assert DefaultResultClass.Success == 10
+
+    assert DefaultResultClass.min() == 10
+    assert DefaultResultClass.max() == 12
+
+    assert DefaultResultClass.Success < DefaultResultClass.Error
+    assert DefaultResultClass.Success <= DefaultResultClass.Success
+    assert DefaultResultClass.Success <= DefaultResultClass.Error
+    assert DefaultResultClass.Error > DefaultResultClass.Success
+    assert DefaultResultClass.Error >= DefaultResultClass.Success
+
+    assert DefaultResultClass.get_score(DefaultResultClass.Error, DefaultResultClass.Success) == 'error'
+    assert DefaultResultClass.get_score(DefaultResultClass.Skip, DefaultResultClass.Success) == 'success'
+
+    result = DefaultResultClass('success')
+    assert result.set_result(DefaultResultClass.Error) is True
+    assert isinstance(result.result, DefaultResultClass.Result)
+
+    assert result.result == 'error'
+    assert result.set_result('success') is False
+    assert result.set_result('success', force=True) is True
+    assert result.set_result('skip') is False
+    assert result.set_result('skip', force=True) is True
+
+    result.result = 'success'
+    assert result.result == 11
+    assert result.set_result(10, force=True) is True
+    assert result.result == 'success'
+    assert result.result == DefaultResultClass.Success
+
+    result.result = 'error'
+    assert isinstance(result.result, DefaultResultClass.Result)
+    assert result.result == 12
+    assert result.result == 'error'
+    assert result.result == DefaultResultClass.Error
+
+    assert DefaultResultClass.Result.convert('success') == 10
+
+    with pytest.raises(ValueError):  # type: ignore
+        DefaultResultClass.convert('invalid')
 
 
 def test_custom_class():
@@ -56,26 +111,20 @@ def test_custom_class():
 
     assert CustomScanResult.Result.convert('success') == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # type: ignore
         CustomScanResult.convert('invalid')
 
 
-def test_missing_inner_result_class():
-    with pytest.raises(MissingInnerResultClass):
-        class CustomScanResultMissingResultClass(BaseReturnCode):
-            pass
-
-
 def test_wrong_subclass():
-    with pytest.raises(WrongResultSubclass):
+    with pytest.raises(WrongResultSubclass):  # type: ignore
         class CustomScanWrongResultClass(BaseReturnCode):
-            class Result():
+            class Result():  # type: ignore
                 pass
 
 
 def test_wrong_result_subclass():
-    with pytest.raises(WrongResultValue):
-        class CustomScanWrongResultClass(BaseReturnCode):
+    with pytest.raises(WrongResultValue):  # type: ignore
+        class CustomScanWrongResultClass(BaseReturnCode):  # pyright: reportUnusedClass=false
             class Result(BaseReturnCode.Result):
                 pass
             Success = BaseReturnCode.Result('success', 10)
