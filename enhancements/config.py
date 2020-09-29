@@ -34,7 +34,7 @@ class ExtendedConfigParser(ConfigParser):
         modules_from_file: bool = False,
         ignore_missing_default_config: bool = False
     ):
-        super(ExtendedConfigParser, self).__init__(allow_no_value=True)
+        super().__init__(allow_no_value=True)
         self.defaultini: Text = defaultini
         self.package: Optional[Text] = package
         self.ignore_missing_default_config: bool = ignore_missing_default_config
@@ -81,7 +81,7 @@ class ExtendedConfigParser(ConfigParser):
 
     def read(self, filenames: Any, encoding: Optional[Text] = 'utf-8') -> List[Text]:
         try:
-            return super(ExtendedConfigParser, self).read(filenames, encoding=encoding)
+            return super().read(filenames, encoding=encoding)
         except Exception:
             logging.exception("error reading %s", filenames)
             return []
