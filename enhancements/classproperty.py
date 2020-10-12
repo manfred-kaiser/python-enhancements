@@ -11,7 +11,7 @@ from typing import (
 
 
 class ClassPropertyMeta(type):
-    def __setattr__(self, key: Text, value: Any) -> None:
+    def __setattr__(self, key: Text, value: Any) -> Any:
         obj = self.__dict__.get(key, None)
         if isinstance(obj, classproperty):
             return obj.__set__(self, value)
@@ -54,7 +54,7 @@ class classproperty():
         self.fset: Optional[Union[Callable[..., None], staticmethod, classmethod]] = None if fset is None else self._fix_function(fset)
 
     def __get__(self, instance: Any, owner: Optional[ClassPropertyMeta] = None) -> Any:
-        if not issubclass(type(owner), ClassPropertyMeta):  # type: ignore
+        if not issubclass(type(owner), ClassPropertyMeta):
             raise TypeError(
                 f"Class {owner} does not extend from the required "
                 f"ClassPropertyMeta metaclass"
@@ -64,7 +64,7 @@ class classproperty():
     def __set__(self, owner: ClassPropertyMeta, value: Any) -> Any:
         if not self.fset:
             raise AttributeError("can't set attribute")
-        if not isinstance(owner, ClassPropertyMeta):  # type: ignore
+        if not isinstance(owner, ClassPropertyMeta):
             owner = type(owner)
         return self.fset.__get__(None, owner)(value)  # type: ignore
 

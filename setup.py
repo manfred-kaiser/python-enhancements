@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages  # type: ignore
+from setuptools import setup, find_packages
 
 # read the contents of your README file
 from os import path
@@ -10,7 +10,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='enhancements',
-    version='0.1.6',
+    version='0.1.8',
     author='Manfred Kaiser',
     author_email='manfred.kaiser@logfile.at',
     description='utility library',
@@ -18,7 +18,10 @@ setup(
     long_description_content_type='text/markdown',
     keywords="development configparser argparse",
     python_requires='>= 3.6',
-    packages=find_packages(exclude=("tests",)),  # type: ignore
+    packages=find_packages(exclude=("tests",)),
+    package_data={
+        'enhancements': ['py.typed'],
+    },
     url="https://enhancements.readthedocs.io/",
     project_urls={
         'Source': 'https://github.com/manfred-kaiser/python-enhancements',

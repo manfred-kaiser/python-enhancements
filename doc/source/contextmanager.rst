@@ -24,3 +24,22 @@ dass der vom Contex Manager behandelte Code abgebrochen werden kann, sobald mehr
             content = f.readlines()
         return content
     return None
+
+
+ExceptionHandler
+----------------
+
+Mit dem ExceptionHandler ist es möglich Exceptions zu speichern und diese später weiterzuverarbeiten.
+
+.. code-block:: python
+
+    from enhancements.contextmanager import ExceptionHandler
+
+    try:
+        with ExceptionHandler() as ex_handler:
+            raise ValueError()
+    except ValueError:
+        print("cleanup after ValueError")
+    finally:
+        if ex_handler.exception_happened:
+            print("raised exception: {}".format(ex_handler.exc_type.__name__))

@@ -1,12 +1,15 @@
 import operator
 from typing import (
+    cast,
     Any,
     Callable,
     Dict,
+    List,
     Text,
     Type,
     Tuple,
-    Optional
+    Optional,
+    Union
 )
 
 from enhancements.config import ExtendedConfigParser
@@ -26,10 +29,8 @@ class WrongResultValue(Exception):
 
 class ReturnCodeMeta(type):
 
-    def __new__(cls, name: Text, bases: Tuple[type], dct: Dict[str, Any]):
-        x: Type['BaseReturnCode'] = super().__new__(cls, name, bases, dct)
-        if 'Result' not in x.__dict__:
-            raise MissingInnerResultClass('{} must have a inner Result class'.format(x.__name__))
+    def __new__(cls, name: Text, bases: Tuple[type], dct: Dict[str, Any]) -> 'ReturnCodeMeta':
+        x: Type['BaseReturnCode'] = cast(Type['BaseReturnCode'], super().__new__(cls, name, bases, dct))
         result_basesclasses = [b.__qualname__ for b in x.Result.__bases__]
         if 'BaseReturnCode.Result' not in result_basesclasses and 'int' not in result_basesclasses:
             raise WrongResultSubclass()
@@ -49,7 +50,7 @@ class ReturnCodeMeta(type):
                 )
                 setattr(x, result_name.capitalize(), result_value)
                 setattr(x, result_name.lower(), x.Action(x, result_value))
-        baseclass_dict = {b.__qualname__: b for b in x.__bases__}
+        baseclass_dict: Dict[Text, Type['BaseReturnCode']] = {b.__qualname__: cast(Type['BaseReturnCode'], b) for b in x.__bases__}
         baseclass: Optional[Type['BaseReturnCode']] = baseclass_dict.get('BaseReturnCode', None)
         if baseclass:
             for r in [a for a in x.__dict__.values() if isinstance(a, baseclass.Result)]:
@@ -87,10 +88,10 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             result.skip = skip
             return result
 
-        def __str__(self):
+        def __str__(self) -> Text:
             return self.string
 
-        def __hash__(self):
+        def __hash__(self) -> int:
             return int(self)
 
         def __eq__(self, other: Any) -> bool:
@@ -117,7 +118,10 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
                 raise ValueError('Class not configured')
             return cls.BASERESULT.convert(value)
 
-    def __init__(self, result: 'BaseReturnCode.Result') -> None:
+    def __init__(
+        self,
+        result: Union['BaseReturnCode.Result', int, Text]
+    ) -> None:
         self._result: 'BaseReturnCode.Result' = self.convert(result)
 
     @property
@@ -125,7 +129,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         return self._result
 
     @result.setter
-    def result(self, value: 'BaseReturnCode.Result') -> None:
+    def result(self, value: Union['BaseReturnCode.Result', int, Text]) -> None:
         self.set_result(value)
 
     @classmethod
@@ -154,7 +158,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
     def _compare(cls, a: Any, b: Any) -> bool:
         return cls.COMPERATOR(a, b)
 
-    def set_result(self, value: 'BaseReturnCode.Result', force: bool = False) -> bool:
+    def set_result(self, value: Union['BaseReturnCode.Result', int, Text], force: bool = False) -> bool:
         if self._compare(value, self._result) or force:
             new_value = self.convert(value)
             if new_value.skip and not force:
@@ -164,11 +168,11 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         return False
 
     @classmethod
-    def get_results(cls):
+    def get_results(cls) -> Dict[int, 'BaseReturnCode.Result']:
         return {int(x): x for x in cls.__dict__.values() if isinstance(x, cls.Result)}
 
     @classmethod
-    def get_result_types(cls):
+    def get_result_types(cls) -> List[Text]:
         return [x.string for x in cls.__dict__.values() if isinstance(x, cls.Result)]
 
     @classmethod
