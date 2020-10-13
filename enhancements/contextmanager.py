@@ -2,7 +2,8 @@
 
 import contextlib
 import resource
-from typing import Any, Iterator
+import traceback
+from typing import Any, Iterator, Text
 
 
 @contextlib.contextmanager
@@ -49,3 +50,6 @@ class ExceptionHandler:
         self.exc_type = exc_type
         self.exc_value = exc_value
         self.exc_traceback = exc_traceback
+
+    def __str__(self) -> Text:
+        return "".join(traceback.format_exception(self.exc_type, self.exc_value, self.exc_traceback))
