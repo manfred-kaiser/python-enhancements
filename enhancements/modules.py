@@ -162,7 +162,7 @@ def append_modules(moduleloader: Optional['ModuleParser'] = None) -> Type['argpa
                     modules_from_file=parser.modules_from_file if isinstance(parser, ModuleParser) else False
                 )
                 for module in value_array:
-                    super(ModuleLoaderAppendAction, self).__call__(parser, namespace, module, option_string)  # type: ignore
+                    super().__call__(parser, namespace, module, option_string)  # type: ignore
     return ModuleLoaderAppendAction
 
 
@@ -174,7 +174,7 @@ class ModuleError(Exception):
         baseclass: Optional[Union[Type['Module'], Tuple[Type['Module'], ...]]] = None,
         message: Optional[Text] = None
     ):
-        super(ModuleError, self).__init__()
+        super().__init__()
         self.moduleclass = moduleclass
         self.baseclass = baseclass
         self.message = message
@@ -221,7 +221,7 @@ class Module(metaclass=ClassPropertyMeta):
             raise ModuleError()
         # add "action" to new arguments
         kwargs['action'] = load_module()
-        if cls.MODULES and cls.PARSER:
+        if cls.MODULES is not None and cls.PARSER is not None:
             cls.MODULES.append((cls.PARSER.add_argument(*args, **kwargs), baseclass))
 
     @classmethod
@@ -271,7 +271,7 @@ class ModuleParser(_ModuleArgumentParser):
         if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, Module)):
             raise ValueError("baseclass must be tuple or subclass of Module")
 
-        super(ModuleParser, self).__init__(add_help=False, **kwargs)
+        super().__init__(add_help=False, **kwargs)
         self.modules_from_file: bool = modules_from_file
         self.__kwargs = kwargs
         self._extra_modules: List[Tuple[argparse.Action, type]] = []
