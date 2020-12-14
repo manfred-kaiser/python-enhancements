@@ -221,7 +221,7 @@ class Module(metaclass=ClassPropertyMeta):
             raise ModuleError()
         # add "action" to new arguments
         kwargs['action'] = load_module()
-        if cls.MODULES and cls.PARSER:
+        if cls.MODULES is not None and cls.PARSER is not None:
             cls.MODULES.append((cls.PARSER.add_argument(*args, **kwargs), baseclass))
 
     @classmethod
