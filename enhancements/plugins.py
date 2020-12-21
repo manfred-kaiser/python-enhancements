@@ -32,9 +32,12 @@ class LogModule(ModuleParserPlugin):
 
         logging.debug("loading LogModule")
 
+        file_logging_disabled = hasattr(self.args, 'nolog') and self.args.nolog
         if self.args.logfile:
+            self.args.logfile = os.path.expanduser(self.args.logfile)
             try:
-                if hasattr(self.args, 'nolog') and not self.args.nolog and self.create_log_dir(self.args.logfile):
+                if not file_logging_disabled and self.create_log_dir(self.args.logfile):
+                    logging.info("Logging to file: %s", self.args.logfile)
                     logfile_handler = logging.FileHandler(self.args.logfile)
                     logfile_handler.setFormatter(logformatter)
                     root_logger.addHandler(logfile_handler)
