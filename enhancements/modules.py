@@ -180,6 +180,10 @@ class ModuleError(Exception):
         self.message = message
 
 
+class InvalidModuleArguments(Exception):
+    pass
+
+
 class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
@@ -200,7 +204,10 @@ class Module(metaclass=ClassPropertyMeta):
 
     def __init__(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs: Any) -> None:
         self.args: argparse.Namespace
-        self.args, _ = self.PARSER.parse_known_args(args, namespace)
+        parser_retval = self.PARSER.parse_known_args(args, namespace)
+        if parser_retval is None:
+            raise InvalidModuleArguments()
+        self.args, _ = parser_retval
 
         actions = {action.dest: action for action in self.PARSER._actions}
         for param_name, param_value in kwargs.items():
@@ -409,8 +416,10 @@ class ModuleParser(_ModuleArgumentParser):
 
         # initialize plugins
         for plugin in self._plugins:
-            self._plugins[plugin] = plugin(args)
-
+            try:
+                self._plugins[plugin] = plugin(args)
+            except InvalidModuleArguments:
+                logging.debug("Error Plugin init")
         # create complete argument parser and return arguments
         parser = argparse.ArgumentParser(parents=list(self._module_parsers), **self.__kwargs)
         return parser
