@@ -399,7 +399,12 @@ class ModuleParser(_ModuleArgumentParser):
         pass
 
     def _create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> 'argparse.ArgumentParser':
-        parsed_args, _ = super().parse_known_args(args=args, namespace=namespace)
+        parsed_args_tuple = super().parse_known_args(args=args, namespace=namespace)
+        if not parsed_args_tuple:
+            self.exit_on_error = False
+            super().parse_known_args(args=args, namespace=namespace)
+
+        parsed_args, _ = parsed_args_tuple
 
         # load modules from cmd args
         if self.baseclasses:
