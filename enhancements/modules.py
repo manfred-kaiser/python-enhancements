@@ -148,12 +148,26 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
             if values:
                 if entry_point_name:
+                    entry_point_list = []
                     for entry_point in pkg_resources.iter_entry_points(entry_point_name):
+                        entry_point_list.append(entry_point.name)
                         if entry_point.name == values:
-                            values = get_module_class(entry_point.load(), moduleloader)
+                            values = entry_point.load()
+                            break
+                        if entry_point.module_name == values:
+                            values = get_module_class(entry_point.module_name, moduleloader)
                             break
                     else:
-                        values = get_module_class(values, moduleloader)
+                        try:
+                            values = get_module_class(values, moduleloader)
+                        except Exception:
+                            raise argparse.ArgumentError(
+                                self,
+                                "Module '{}' not found! Valid modules are: {}".format(
+                                    values,
+                                    ", ".join(entry_point_list)
+                                )
+                            )
                 else:
                     values = get_module_class(values, moduleloader)
                 setattr(namespace, self.dest, values[0] if values else None)
@@ -236,7 +250,7 @@ class Module(metaclass=ClassPropertyMeta):
             logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, Module, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
-        kwargs['action'] = load_module()
+        kwargs['action'] = load_module(entry_point_name=kwargs.get('dest'))
         if cls.MODULES is not None and cls.PARSER is not None:
             cls.MODULES.append((cls.PARSER.add_argument(*args, **kwargs), baseclass))
 
@@ -399,7 +413,12 @@ class ModuleParser(_ModuleArgumentParser):
         pass
 
     def _create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> 'argparse.ArgumentParser':
-        parsed_args, _ = super().parse_known_args(args=args, namespace=namespace)
+        parsed_args_tuple = super().parse_known_args(args=args, namespace=namespace)
+        if not parsed_args_tuple:
+            self.exit_on_error = False
+            super().parse_known_args(args=args, namespace=namespace)
+
+        parsed_args, _ = parsed_args_tuple
 
         # load modules from cmd args
         if self.baseclasses:
