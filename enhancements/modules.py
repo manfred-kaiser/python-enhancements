@@ -32,6 +32,7 @@ import argparse
 import inspect
 import traceback
 from types import ModuleType
+import pkg_resources
 
 from typing import (
     Any,
@@ -140,13 +141,21 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
     return modules
 
 
-def load_module(moduleloader: Optional['ModuleParser'] = None) -> Type['argparse.Action']:
+def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name: Optional[str] = None) -> Type['argparse.Action']:
     """Action, um Module mit der Methode "add_module" des ModuleParsers als Kommandozeilenparameter definieren zu können
     """
     class ModuleLoaderAction(argparse.Action):
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
             if values:
-                values = get_module_class(values, moduleloader)
+                if entry_point_name:
+                    for entry_point in pkg_resources.iter_entry_points(entry_point_name):
+                        if entry_point.name == values:
+                            values = get_module_class(entry_point.load(), moduleloader)
+                            break
+                    else:
+                        values = get_module_class(values, moduleloader)
+                else:
+                    values = get_module_class(values, moduleloader)
                 setattr(namespace, self.dest, values[0] if values else None)
     return ModuleLoaderAction
 
@@ -346,7 +355,7 @@ class ModuleParser(_ModuleArgumentParser):
             logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, Module, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
-        kwargs['action'] = load_module(self)
+        kwargs['action'] = load_module(self, entry_point_name=kwargs.get('dest'))
         self._extra_modules.append((self.add_argument(*args, **kwargs), baseclass))
         logging.debug("Baseclass: %s", baseclass)
 
