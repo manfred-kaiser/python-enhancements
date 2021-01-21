@@ -151,11 +151,8 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
                     entry_point_list = []
                     for entry_point in pkg_resources.iter_entry_points(entry_point_name):
                         entry_point_list.append(entry_point.name)
-                        if entry_point.name == values:
+                        if entry_point.name == values or entry_point.module_name == values:
                             values = [entry_point.load()]
-                            break
-                        if entry_point.module_name == values:
-                            values = get_module_class(entry_point.module_name, moduleloader)
                             break
                     else:
                         try:
