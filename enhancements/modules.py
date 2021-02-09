@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 
-"""Module parsing library
+"""BaseModule parsing library
 
 Dieses Modul ist eine Erweiterung zum Standard-Argparse Modul, welches die Möglichkeit bietet
-Klassen als Module zu laden.
+Klassen als BaseModule zu laden.
 
 Dieses Modul beinhaltet folgende öffentliche Klassen:
 
     - ModuleParser -- Einstiegspunkt um Kommandozeilenparameter zu parsen.
         Diese Klasse bietet die gleiche Funktionalität wie der ArgumentParser
-        aus dem argparse Modul. Jedoch ist es möglich Module und Plugins anzugeben,
+        aus dem argparse Modul. Jedoch ist es möglich BaseModule und Plugins anzugeben,
         die die Funktionalität des Parsers bzw. der Applikation erweitern
     - ModuleParserPlugin -- Basisklasse für Plugins.
         Diese Klasse dient als Basis für Plugins die die Funktionalität des ModuleParsers erweitern.
-    - Module -- Basisklasse für Module, die in der Applikation verwendet werden können.
-        Alle Module müssen von dieser Klasse abstammen. Stammt ein Modul nicht von dieser Klasse ab, kommt es zu
+    - BaseModule -- Basisklasse für BaseModule, die in der Applikation verwendet werden können.
+        Alle BaseModule müssen von dieser Klasse abstammen. Stammt ein Modul nicht von dieser Klasse ab, kommt es zu
         einem ModuleError.
     - ModuleError -- Exception, die geworfen wird, wenn es beim initialisieren von Modulen oder Plugins zu Fehlern kommt.
         Diese Exception wird geworfen, wenn es zu einem Fehler gekommen ist. Details sind der Exception zu entnehmen.
@@ -90,30 +90,30 @@ def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> 
     return module
 
 
-def _get_valid_module_class(module: ModuleType, funcname: Text) -> Type['Module']:
+def _get_valid_module_class(module: ModuleType, funcname: Text) -> Type['BaseModule']:
     """Prüfen, ob das angeforderte Modul existiert und gibt die Klasse zurück
     """
-    handlerclass: Type['Module'] = getattr(module, funcname, None)
-    # Prüfen, ob das angeforderte Modul eine Subklasse von Module ist
-    if not handlerclass or not isinstance(handlerclass, type) or not issubclass(handlerclass, Module):
-        logging.error("Module %s is not subclass of Module!", type(handlerclass))
+    handlerclass: Type['BaseModule'] = getattr(module, funcname, None)
+    # Prüfen, ob das angeforderte Modul eine Subklasse von BaseModule ist
+    if not handlerclass or not isinstance(handlerclass, type) or not issubclass(handlerclass, BaseModule):
+        logging.error("BaseModule %s is not subclass of BaseModule!", type(handlerclass))
         raise ModuleError()
     return handlerclass
 
 
-def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text, Type['Module']]]], moduleloader: Optional['ModuleParser'] = None, modules_from_file: bool = False) -> List[Type['Module']]:
+def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[Text, Type['BaseModule']]]], moduleloader: Optional['ModuleParser'] = None, modules_from_file: bool = False) -> List[Type['BaseModule']]:
     """Lädt eine Klasse anhand eines Strings.
 
     Dieser kann bei einem Modul, dass in einem PYthon Package vorhanden ist in folgender Form übergeben werden: **mymodule.MyModule**
 
     Alternativ kann auch ein Modul aus einer alleinstehenden Datei geladen werden: **/home/user/function.py:MyModule**
     """
-    modules: List[Type['Module']] = []
+    modules: List[Type['BaseModule']] = []
     if not modulelist:
         return modules
     try:
         # Wurde keine Liste übergeben, wird "modulelist" in eine Liste umgewandelt, damit die Verarbeitung gleich ist
-        modulelist_it: Sequence[Union[Text, Type['Module']]]
+        modulelist_it: Sequence[Union[Text, Type['BaseModule']]]
         if not isinstance(modulelist, list):
             # type checking not possible with pep484 (https://github.com/python/typing/issues/256)
             modulelist_it = [modulelist]  # type: ignore
@@ -128,7 +128,7 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
                 handlerclass = _get_valid_module_class(module, funcname)
                 if handlerclass:
                     modules.append(handlerclass)
-            elif inspect.isclass(modulearg) and issubclass(modulearg, Module):
+            elif inspect.isclass(modulearg) and issubclass(modulearg, BaseModule):
                 # Wenn bereits ein Modul übergeben wurd, wird dieses gleich der Ergebnisliste hinzugefügt
                 modules.append(modulearg)
             else:
@@ -142,7 +142,7 @@ def get_module_class(modulelist: Union[Type['Module'], Text, Sequence[Union[Text
 
 
 def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name: Optional[str] = None) -> Type['argparse.Action']:
-    """Action, um Module mit der Methode "add_module" des ModuleParsers als Kommandozeilenparameter definieren zu können
+    """Action, um BaseModule mit der Methode "add_module" des ModuleParsers als Kommandozeilenparameter definieren zu können
     """
     class ModuleLoaderAction(argparse.Action):
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
@@ -160,7 +160,7 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
                         except Exception:
                             raise argparse.ArgumentError(
                                 self,
-                                "Module '{}' not found! Valid modules are: {}".format(
+                                "BaseModule '{}' not found! Valid modules are: {}".format(
                                     values,
                                     ", ".join(entry_point_list)
                                 )
@@ -172,7 +172,7 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
 
 
 def append_modules(moduleloader: Optional['ModuleParser'] = None) -> Type['argparse._AppendAction']:
-    """Action für den ModuleParser um Module als Kommanozeilen Parameter "--module" definieren zu können
+    """Action für den ModuleParser um BaseModule als Kommanozeilen Parameter "--module" definieren zu können
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
@@ -190,8 +190,8 @@ class ModuleError(Exception):
 
     def __init__(
         self,
-        moduleclass: Optional[Union[Type['Module'], Tuple[Type['Module'], ...]]] = None,
-        baseclass: Optional[Union[Type['Module'], Tuple[Type['Module'], ...]]] = None,
+        moduleclass: Optional[Union[Type['BaseModule'], Tuple[Type['BaseModule'], ...]]] = None,
+        baseclass: Optional[Union[Type['BaseModule'], Tuple[Type['BaseModule'], ...]]] = None,
         message: Optional[Text] = None
     ):
         super().__init__()
@@ -217,52 +217,52 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
         super().error(message)
 
 
-class Module(metaclass=ClassPropertyMeta):
+class BaseModule():
     _parser: Optional[_ModuleArgumentParser] = None
     _modules: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
     def __init__(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs: Any) -> None:
         self.args: argparse.Namespace
-        parser_retval = self.PARSER.parse_known_args(args, namespace)
+        parser_retval = self.parser().parse_known_args(args, namespace)
         if parser_retval is None:
             raise InvalidModuleArguments()
         self.args, _ = parser_retval
 
-        actions = {action.dest: action for action in self.PARSER._actions}
+        actions = {action.dest: action for action in self.parser()._actions}
         for param_name, param_value in kwargs.items():
             action = actions.get(param_name)
             if not action:
                 raise KeyError('keyword argument {} has no param'.format(param_name))
             # check if it is an instance of the argument type, ignore mypy error because of false positive
-            if hasattr(action, 'type') and not isinstance(param_value, action.type):
+            if hasattr(action, 'type') and not isinstance(param_value, action.type):  # type: ignore
                 raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
             setattr(self.args, param_name, param_value)
 
     @classmethod
     def add_module(cls, *args: Any, **kwargs: Any) -> None:
         # remove "baseclass" from arguments
-        baseclass: Type[Module] = kwargs.pop('baseclass', Module)
-        if not inspect.isclass(baseclass) or not issubclass(baseclass, Module):
-            logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, Module, type(baseclass))
+        baseclass: Type[BaseModule] = kwargs.pop('baseclass', BaseModule)
+        if not inspect.isclass(baseclass) or not issubclass(baseclass, BaseModule):
+            logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, BaseModule, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
         kwargs['action'] = load_module(entry_point_name=kwargs.get('dest'))
-        if cls.MODULES is not None and cls.PARSER is not None:
-            cls.MODULES.append((cls.PARSER.add_argument(*args, **kwargs), baseclass))
+        if cls.modules() is not None and cls.parser() is not None:
+            cls.modules().append((cls.parser().add_argument(*args, **kwargs), baseclass))
 
     @classmethod
     def parser_arguments(cls) -> None:
         pass
 
-    @classproperty
-    def MODULES(cls) -> List[Tuple[argparse.Action, Any]]:
+    @classmethod
+    def modules(cls) -> List[Tuple[argparse.Action, Any]]:
         if '_modules' not in cls.__dict__ or cls._modules is None:
             cls._modules = []
         return cls._modules
 
-    @classproperty
-    def PARSER(cls) -> _ModuleArgumentParser:
+    @classmethod
+    def parser(cls) -> _ModuleArgumentParser:
         if '_parser' not in cls.__dict__:
             cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)  # type: ignore
             cls.parser_arguments()
@@ -270,14 +270,29 @@ class Module(metaclass=ClassPropertyMeta):
             raise ValueError('failed to create ModuleParser for {}'.format(cls))
         return cls._parser
 
-    @classproperty
-    def config_section(cls) -> Text:  # pylint: disable=E0213
+    @classmethod
+    def config_section_name(cls) -> Text:  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
             return cls.__name__  # type: ignore
         return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)  # type: ignore
 
 
-class ModuleParserPlugin(Module):
+class Module(BaseModule, metaclass=ClassPropertyMeta):
+
+    @classproperty
+    def PARSER(cls):
+        return cls.parser()
+
+    @classproperty
+    def MODULES(cls):
+        return cls.modules()
+
+    @classproperty
+    def config_section(cls):
+        return cls.config_section_name()
+
+
+class ModuleParserPlugin(BaseModule):
     pass
 
 
@@ -285,8 +300,8 @@ class ModuleParser(_ModuleArgumentParser):
 
     def __init__(
         self,
-        default: Optional[Union[Type[Module], Tuple[Type[Module], ...]]] = None,
-        baseclass: Optional[Union[Type[Module], Tuple[Type[Module], ...]]] = None,
+        default: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
+        baseclass: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
         baseclass_as_default: bool = True,
         modules_from_file: bool = False,
         **kwargs: Any
@@ -294,18 +309,18 @@ class ModuleParser(_ModuleArgumentParser):
         if baseclass is None:
             baseclass = ()
 
-        # check if baseclass is set and baseclasses is tuple or subclass of Module
-        if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, Module)):
-            raise ValueError("baseclass must be tuple or subclass of Module")
+        # check if baseclass is set and baseclasses is tuple or subclass of BaseModule
+        if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, BaseModule)):
+            raise ValueError("baseclass must be tuple or subclass of BaseModule")
 
         super().__init__(add_help=False, **kwargs)
         self.modules_from_file: bool = modules_from_file
         self.__kwargs = kwargs
         self._extra_modules: List[Tuple[argparse.Action, type]] = []
         self._module_parsers: Set[argparse.ArgumentParser] = {self}
-        self._plugins: Dict[Type[ModuleParserPlugin], Optional[Module]] = {}
+        self._plugins: Dict[Type[ModuleParserPlugin], Optional[BaseModule]] = {}
 
-        self.baseclasses: Tuple[Type[Module], ...] = self._get_baseclasses(baseclass)
+        self.baseclasses: Tuple[Type[BaseModule], ...] = self._get_baseclasses(baseclass)
 
         if default is None:
             default = self.baseclasses if baseclass_as_default else ()
@@ -320,19 +335,19 @@ class ModuleParser(_ModuleArgumentParser):
                 dest='modules',
                 action=append_modules(self),
                 default=self.default_class,
-                help='Module to parse, modify data'
+                help='BaseModule to parse, modify data'
             )
 
-    def _get_baseclasses(self, baseclass: Union[Type[Module], Tuple[Type[Module], ...]]) -> Tuple[Type[Module], ...]:
+    def _get_baseclasses(self, baseclass: Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]) -> Tuple[Type[BaseModule], ...]:
         # set default as baseclass if baseclass is not set
-        _baseclasses: List[Type[Module]] = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
+        _baseclasses: List[Type[BaseModule]] = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
         # self.baseclasses must be tuple, because issubclass requires tuple and not list
         baseclasses = tuple([bcls for bcls in _baseclasses if bcls])
 
-        # check if all baseclasses are subclass of Module
+        # check if all baseclasses are subclass of BaseModule
         for bcls in baseclasses:
-            if not isinstance(bcls, type) or not issubclass(bcls, Module):
-                raise ModuleError(message='Baseclass mast be subclass of Module')
+            if not isinstance(bcls, type) or not issubclass(bcls, BaseModule):
+                raise ModuleError(message='Baseclass mast be subclass of BaseModule')
         if not baseclasses:
             logging.debug("modules are not supported")
         return baseclasses
@@ -343,7 +358,7 @@ class ModuleParser(_ModuleArgumentParser):
 
     def add_plugin(self, plugin: Type[ModuleParserPlugin]) -> None:
         if not inspect.isclass(plugin) or not issubclass(plugin, ModuleParserPlugin):
-            raise ValueError("plugin must be a class and subclass of Module!")
+            raise ValueError("plugin must be a class and subclass of BaseModule!")
         self._plugins[plugin] = None
 
     def add_parser(self, parser: argparse.ArgumentParser) -> None:
@@ -357,13 +372,13 @@ class ModuleParser(_ModuleArgumentParser):
 
     def add_module(self, *args: Any, **kwargs: Any) -> None:
         # remove "baseclass" from arguments
-        baseclass = kwargs.pop('baseclass', Module)
+        baseclass = kwargs.pop('baseclass', BaseModule)
         for arg in args:
             if inspect.isclass(arg) and issubclass(arg, ModuleParserPlugin):
-                logging.error('ModuleParserPlugin loaded as Module. please use add_plugin instead.')
+                logging.error('ModuleParserPlugin loaded as BaseModule. please use add_plugin instead.')
                 raise ModuleError(moduleclass=arg, baseclass=baseclass)
-        if not inspect.isclass(baseclass) or not issubclass(baseclass, Module):
-            logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, Module, type(baseclass))
+        if not inspect.isclass(baseclass) or not issubclass(baseclass, BaseModule):
+            logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, BaseModule, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
         kwargs['action'] = load_module(self, entry_point_name=kwargs.get('dest'))
@@ -397,11 +412,11 @@ class ModuleParser(_ModuleArgumentParser):
                 if module is baseclass:
                     logging.error('module must not be baseclass!')
                     raise ModuleError(module, baseclass)
-                moduleparsers.append(module.PARSER)
+                moduleparsers.append(module.parser())
 
                 try:
-                    parsed_subargs, _ = module.PARSER.parse_known_args(args=args, namespace=namespace)
-                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.MODULES))
+                    parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
+                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
                 except TypeError:
                     logging.exception("Unable to load modules")
         return moduleparsers
@@ -424,8 +439,8 @@ class ModuleParser(_ModuleArgumentParser):
                     raise ModuleError(module, self.baseclasses)
                 if module is self.baseclasses:
                     raise ModuleError(module, self.baseclasses)
-                self.add_parser(module.PARSER)
-                parsed_sub_args = module.PARSER.parse_known_args(args=args, namespace=namespace)
+                self.add_parser(module.parser())
+                parsed_sub_args = module.parser().parse_known_args(args=args, namespace=namespace)
                 submods = self.get_sub_modules(parsed_sub_args, args, namespace, parsed_args.modules, use_modules=True)
                 for submod in submods:
                     self.add_parser(submod)
@@ -437,7 +452,7 @@ class ModuleParser(_ModuleArgumentParser):
 
         # load plugins
         for plugin in self._plugins:
-            self.add_parser(plugin.PARSER)
+            self.add_parser(plugin.parser())
 
         # initialize plugins
         for plugin in self._plugins:

@@ -16,7 +16,7 @@ from typing import (
     Type
 )
 
-from enhancements.modules import get_module_class, Module
+from enhancements.modules import get_module_class, BaseModule
 
 
 class DefaultConfigNotFound(Exception):
@@ -107,7 +107,7 @@ class ExtendedConfigParser(ConfigParser):
     def getlist(self, section: Text, option: Text, sep: Text = ',', chars: Optional[Text] = None) -> List[Text]:
         return [chunk.strip(chars) for chunk in self.get(section, option).split(sep) if chunk]
 
-    def _getmodule_option(self, section: Text, option: Text) -> Type[Module]:
+    def _getmodule_option(self, section: Text, option: Text) -> Type[BaseModule]:
         """ get a module class from config file
         """
         module = self.get(section, option)
@@ -122,25 +122,25 @@ class ExtendedConfigParser(ConfigParser):
             )
         return values[0]
 
-    def _getmodule_section(self, section: Text) -> Optional[Type[Module]]:
+    def _getmodule_section(self, section: Text) -> Optional[Type[BaseModule]]:
         if not self.has_section(section):
-            raise ValueError('Config section does not exist! Module not loaded.')
+            raise ValueError('Config section does not exist! BaseModule not loaded.')
         if not self.has_option(section, 'enabled') or not self.has_option(section, 'class'):
             raise ValueError('Section is not a module section. Missing option enabled or class')
         if not self.getboolean(section, 'enabled'):
             return None
         return self.getmodule(section, 'class')
 
-    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Type[Module]]:
+    def getmodule(self, section: Text, option: Optional[Text] = None) -> Optional[Type[BaseModule]]:
         if option:
             return self._getmodule_option(section, option)
         return self._getmodule_section(section)
 
-    def getplugins(self, module_prefix: Union[Text, Module, Type[Module]]) -> List[Type[Module]]:
+    def getplugins(self, module_prefix: Union[Text, BaseModule, Type[BaseModule]]) -> List[Type[BaseModule]]:
         plugins = []
         if isinstance(module_prefix, str):
             pass
-        elif isinstance(module_prefix, Module) or (inspect.isclass(module_prefix) and issubclass(module_prefix, Module)):
+        elif isinstance(module_prefix, BaseModule) or (inspect.isclass(module_prefix) and issubclass(module_prefix, BaseModule)):
             if module_prefix.CONFIG_PREFIX:
                 module_prefix = module_prefix.CONFIG_PREFIX
             else:

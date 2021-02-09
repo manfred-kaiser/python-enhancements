@@ -8,10 +8,10 @@ from typing import (
     Optional
 )
 
-from enhancements.modules import Module
+from enhancements.modules import BaseModule
 
 
-class ExampleModule(Module):
+class ExampleModule(BaseModule):
 
     def execute(self, data: Union[bytes, Text]) -> Optional[Union[bytes, Text]]:
         pass
@@ -21,9 +21,9 @@ class HexDump(ExampleModule):
 
     @classmethod
     def parser_arguments(cls) -> None:
-        if not cls.PARSER:
+        if not cls.parser():
             return
-        cls.PARSER.add_argument(
+        cls.parser().add_argument(
             '--hexwidth',
             dest='hexwidth',
             type=int,
