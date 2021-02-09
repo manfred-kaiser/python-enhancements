@@ -277,7 +277,7 @@ class BaseModule():
         return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)  # type: ignore
 
 
-class Module(BaseModule, metaclass=ClassPropertyMeta):
+class LegacyModule(BaseModule, metaclass=ClassPropertyMeta):
 
     @classproperty
     def PARSER(cls):
@@ -290,6 +290,10 @@ class Module(BaseModule, metaclass=ClassPropertyMeta):
     @classproperty
     def config_section(cls):
         return cls.config_section_name()
+
+
+class Module(LegacyModule):
+    pass
 
 
 class ModuleParserPlugin(BaseModule):
