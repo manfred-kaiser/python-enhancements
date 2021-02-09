@@ -120,7 +120,7 @@ Folgendes Beispiel zeigt ein HexDump Modul, das einen Parameter 'hexwidth' defin
 
         @classmethod
         def parser_arguments(cls):
-            cls.PARSER.add_argument(
+            cls.parser().add_argument(
                 '--hexwidth',
                 dest='hexwidth',
                 type=int,
@@ -218,7 +218,7 @@ Module k√∂nnen sowohl dem ModuleParser als einem Modul zugewiesen werden. Hierf√
 
         @classmethod
         def parser_arguments(cls):
-            cls.PARSER.add_argument(
+            cls.parser().add_argument(
                 '--value-1',
                 dest='submodule_1_value',
                 default=1,
@@ -230,7 +230,7 @@ Module k√∂nnen sowohl dem ModuleParser als einem Modul zugewiesen werden. Hierf√
     class SubModule2(SubModule):
         @classmethod
         def parser_arguments(cls):
-            cls.PARSER.add_argument(
+            cls.parser().add_argument(
                 '--value-2',
                 dest='submodule_2_value',
                 default=2,
@@ -313,7 +313,7 @@ erweitert. Dieser ist sowohl bei der Verwendung mit Kommandozeilenparametern als
 
         @classmethod
         def parser_arguments(cls):
-            cls.PARSER.add_argument(
+            cls.parser().add_argument(
                 '--value-1',
                 dest='submodule_1_value',
                 default=1,

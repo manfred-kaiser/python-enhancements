@@ -48,9 +48,9 @@ class LogModule(ModuleParserPlugin):
 
     @classmethod
     def parser_arguments(cls) -> None:
-        if not cls.PARSER:
+        if not cls.parser():
             return
-        cls.PARSER.add_argument(
+        cls.parser().add_argument(
             '-d',
             '--debug',
             dest='debug',
@@ -58,14 +58,14 @@ class LogModule(ModuleParserPlugin):
             action='store_true',
             help='More verbose output of status information'
         )
-        cls.PARSER.add_argument(
+        cls.parser().add_argument(
             '--logfile',
             dest='logfile',
             default=cls.LOGFILE,
             help='path to logfile'
         )
         if cls.LOGFILE:
-            cls.PARSER.add_argument(
+            cls.parser().add_argument(
                 '--no-logfile',
                 dest='nolog',
                 default=False,
@@ -98,9 +98,9 @@ class ConfigModule(ModuleParserPlugin):
 
     @classmethod
     def parser_arguments(cls) -> None:
-        if not cls.PARSER:
+        if not cls.parser():
             return
-        cls.PARSER.add_argument(
+        cls.parser().add_argument(
             '-c',
             '--config',
             dest='config',
