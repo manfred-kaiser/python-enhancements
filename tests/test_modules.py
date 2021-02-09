@@ -131,8 +131,22 @@ def test_module():
     # test wrong keyword argument type
     with pytest.raises(ValueError):
         HexDump(hexwidth='wrong_type')
-    assert HexDump.config_section() == 'HexDump'
-    assert ExampleSubModule.config_section() == 'Examples:ExampleSubModule'
+    assert HexDump.config_section_name() == 'HexDump'
+    assert ExampleSubModule.config_section_name() == 'Examples:ExampleSubModule'
+
+
+def test_module_legacy():
+    from enhancements.modules import LegacyModule, Module, _ModuleArgumentParser
+
+    class LegacyTestModule(Module):
+        pass
+
+    test_legacy_module = LegacyTestModule()
+    assert isinstance(test_legacy_module, BaseModule)
+    assert isinstance(test_legacy_module, LegacyModule)
+    assert isinstance(test_legacy_module, Module)
+    assert isinstance(test_legacy_module.PARSER, _ModuleArgumentParser)
+    assert LegacyTestModule.config_section == 'LegacyTestModule'
 
 
 def test_sub_modules():
