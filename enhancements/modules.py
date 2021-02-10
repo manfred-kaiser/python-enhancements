@@ -186,6 +186,28 @@ def append_modules(moduleloader: Optional['ModuleParser'] = None) -> Type['argpa
     return ModuleLoaderAppendAction
 
 
+def get_entrypoint_modules(entry_point_name: Text) -> Dict[Text, Text]:
+    entrypoints = {}
+    for entry_point in pkg_resources.iter_entry_points(entry_point_name):
+        entry_point_cls = entry_point.load()
+        entry_point_desc = "" if entry_point_cls.__doc__ is None else entry_point_cls.__doc__.split("\n")[0]
+        if entry_point_desc:
+            entry_point_description = "\t* {} -> {}".format(entry_point.name, entry_point_desc)
+        else:
+            entry_point_description = "\t* {}".format(entry_point.name)
+        entrypoints[entry_point.name] = entry_point_description
+    return entrypoints
+
+
+def set_module_kwargs(entry_point_name, **kwargs: Any) -> Dict[Text, Any]:
+    entrypoints = get_entrypoint_modules(entry_point_name)
+    if entrypoints:
+        kwargs['choices'] = entrypoints.keys()
+        kwargs['help'] = kwargs.get('help') or ""
+        kwargs['help'] += "\navailable modules:\n{}".format("\n".join(entrypoints.values()))
+    return kwargs
+
+
 class ModuleError(Exception):
 
     def __init__(
@@ -249,7 +271,7 @@ class BaseModule():
         # add "action" to new arguments
         kwargs['action'] = load_module(entry_point_name=kwargs.get('dest'))
         if cls.modules() is not None and cls.parser() is not None:
-            cls.modules().append((cls.parser().add_argument(*args, **kwargs), baseclass))
+            cls.modules().append((cls.parser().add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
 
     @classmethod
     def parser_arguments(cls) -> None:
@@ -336,13 +358,22 @@ class ModuleParser(_ModuleArgumentParser):
         self.default_class = list(default)
 
         if self.baseclasses:
+            choices = None
+            help_text = "Modules to parse and modify data"
+            entrypoints = {}
+            for baseclass in self.baseclasses:
+                entrypoints.update(get_entrypoint_modules(baseclass.__name__))
+            if entrypoints:
+                choices = list(entrypoints.keys())
+                help_text += "\navailable modules:\n{}".format("\n".join(entrypoints.values()))
             self.add_argument(
                 '-m',
                 '--module',
                 dest='modules',
                 action=append_modules(self),
                 default=self.default_class,
-                help='BaseModule to parse, modify data'
+                choices=choices,
+                help=help_text
             )
 
     def _get_baseclasses(self, baseclass: Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]) -> Tuple[Type[BaseModule], ...]:
@@ -390,20 +421,7 @@ class ModuleParser(_ModuleArgumentParser):
         # add "action" to new arguments
         kwargs['action'] = load_module(self, entry_point_name=kwargs.get('dest'))
 
-        entry_point_list = [entry_point.name for entry_point in pkg_resources.iter_entry_points(kwargs.get('dest'))]
-        entry_point_descriptions = []
-        for entry_point in pkg_resources.iter_entry_points(kwargs.get('dest')):
-            entry_point_cls = entry_point.load()
-            entry_point_desc = "" if entry_point_cls.__doc__ is None else entry_point_cls.__doc__.split("\n")[0]
-            if entry_point_desc:
-                entry_point_descriptions.append("\t* {} -> {}".format(entry_point.name, entry_point_desc))
-            else:
-                entry_point_descriptions.append("\t* {}".format(entry_point.name))
-        if entry_point_list:
-            kwargs['choices'] = entry_point_list
-            kwargs['help'] = kwargs.get('help') or ""
-            kwargs['help'] += "\navailable modules:\n{}".format("\n".join(entry_point_descriptions))
-        self._extra_modules.append((self.add_argument(*args, **kwargs), baseclass))
+        self._extra_modules.append((self.add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
         logging.debug("Baseclass: %s", baseclass)
 
     def get_module_path(self, module: Text) -> Text:
