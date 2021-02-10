@@ -208,8 +208,6 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        logging.error(args)
-        logging.error(kwargs)
         super().__init__(*args, **kwargs)
         self.exit_on_error = True
 
