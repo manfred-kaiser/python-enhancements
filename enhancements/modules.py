@@ -372,7 +372,7 @@ class ModuleParser(_ModuleArgumentParser):
                 dest='modules',
                 action=append_modules(self),
                 default=self.default_class,
-                choices=choices,
+                choices=choices,  # type: ignore
                 help=help_text
             )
 
