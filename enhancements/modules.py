@@ -386,6 +386,20 @@ class ModuleParser(_ModuleArgumentParser):
             raise ModuleError()
         # add "action" to new arguments
         kwargs['action'] = load_module(self, entry_point_name=kwargs.get('dest'))
+
+        entry_point_list = [entry_point.name for entry_point in pkg_resources.iter_entry_points(kwargs.get('dest'))]
+        entry_point_descriptions = []
+        for entry_point in pkg_resources.iter_entry_points(kwargs.get('dest')):
+            entry_point_cls = entry_point.load()
+            entry_point_desc = "" if entry_point_cls.__doc__ is None else entry_point_cls.__doc__.split("\n")[0]
+            if entry_point_desc:
+                entry_point_descriptions.append("\t* {} -> {}".format(entry_point.name, entry_point_desc))
+            else:
+                entry_point_descriptions.append("\t* {}".format(entry_point.name))
+        if entry_point_list:
+            kwargs['choices'] = entry_point_list
+            kwargs['help'] = kwargs.get('help') or ""
+            kwargs['help'] += "\navailable modules:\n{}".format("\n".join(entry_point_descriptions))
         self._extra_modules.append((self.add_argument(*args, **kwargs), baseclass))
         logging.debug("Baseclass: %s", baseclass)
 
