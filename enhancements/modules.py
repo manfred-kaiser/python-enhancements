@@ -208,6 +208,8 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        logging.error(args)
+        logging.error(kwargs)
         super().__init__(*args, **kwargs)
         self.exit_on_error = True
 
@@ -316,6 +318,9 @@ class ModuleParser(_ModuleArgumentParser):
         # check if baseclass is set and baseclasses is tuple or subclass of BaseModule
         if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, BaseModule)):
             raise ValueError("baseclass must be tuple or subclass of BaseModule")
+
+        if 'formatter_class' not in kwargs:
+            kwargs['formatter_class'] = argparse.RawTextHelpFormatter
 
         super().__init__(add_help=False, **kwargs)
         self.modules_from_file: bool = modules_from_file
