@@ -269,7 +269,7 @@ class BaseModule():
             logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, BaseModule, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
-        kwargs['action'] = load_module(entry_point_name=kwargs.get('dest'))
+        kwargs['action'] = load_module(entry_point_name=baseclass.__name__)
         if cls.modules() is not None and cls.parser() is not None:
             cls.modules().append((cls.parser().add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
 
@@ -419,7 +419,7 @@ class ModuleParser(_ModuleArgumentParser):
             logging.error('Baseclass %s mast be subclass of %s not %s', baseclass, BaseModule, type(baseclass))
             raise ModuleError()
         # add "action" to new arguments
-        kwargs['action'] = load_module(self, entry_point_name=kwargs.get('dest'))
+        kwargs['action'] = load_module(self, entry_point_name=baseclass.__name__)
 
         self._extra_modules.append((self.add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
         logging.debug("Baseclass: %s", baseclass)
