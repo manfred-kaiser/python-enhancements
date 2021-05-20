@@ -361,8 +361,8 @@ class ModuleParser(_ModuleArgumentParser):
             choices = None
             help_text = "Modules to parse and modify data"
             entrypoints = {}
-            for baseclass in self.baseclasses:
-                entrypoints.update(get_entrypoint_modules(baseclass.__name__))
+            for baseclasses_item in self.baseclasses:
+                entrypoints.update(get_entrypoint_modules(baseclasses_item.__name__))
             if entrypoints:
                 choices = list(entrypoints.keys())
                 help_text += "\navailable modules:\n{}".format("\n".join(entrypoints.values()))
