@@ -445,6 +445,12 @@ class ModuleParser(_ModuleArgumentParser):
                 modulebasecls = [self.baseclasses for _ in modules]
 
             for module, baseclass in zip(modulelist, modulebasecls):
+                if isinstance(module, str):
+                    for entry_point in pkg_resources.iter_entry_points(baseclass.__name__):
+                        print(entry_point.name)
+                        if entry_point.name == module or entry_point.module_name == module:
+                            module = entry_point.load()
+                            break
                 if not issubclass(module, baseclass):
                     logging.error('module is not an instance of baseclass')
                     raise ModuleError(module, baseclass)
