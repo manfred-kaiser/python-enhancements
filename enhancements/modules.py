@@ -176,7 +176,7 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
     return ModuleLoaderAction
 
 
-def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: Type['BaseModule'] = None, use_entrypoints: bool = False) -> Type['argparse._AppendAction']:
+def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: Optional[Tuple[Type['BaseModule'], ...]] = None, use_entrypoints: bool = False) -> Type['argparse._AppendAction']:
     """Action für den ModuleParser um BaseModule als Kommanozeilen Parameter "--module" definieren zu können
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):
@@ -191,9 +191,9 @@ def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: T
                     super().__call__(parser, namespace, module, option_string)  # type: ignore
                 return
 
-            for basecls in baseclasses:
-                for module in values:
-                    modulecls = load_entry_point(basecls.__name__, module)
+            for basecls in baseclasses or []:
+                for entrypoint_module in values:
+                    modulecls = load_entry_point(basecls.__name__, entrypoint_module)
                     if modulecls:
                         super().__call__(parser, namespace, modulecls, option_string)  # type: ignore
 
@@ -312,6 +312,8 @@ class BaseModule():
         if '_parser_group' not in cls.__dict__:
             parser = cls.parser()
             cls._parser_group = parser.add_argument_group(cls.__name__)
+        if not cls._parser_group:
+            raise ValueError('failed to create ModuleParserGroup for {}'.format(cls))
         return cls._parser_group
 
     @classmethod
@@ -457,7 +459,7 @@ class ModuleParser(_ModuleArgumentParser):
         modules: Optional[List[Tuple[argparse.Action, Any]]],
         use_modules: bool = False
     ) -> List[argparse.ArgumentParser]:
-        moduleparsers = []
+        moduleparsers: List[argparse.ArgumentParser] = []
         if not modules:
             return moduleparsers
         if not use_modules:
