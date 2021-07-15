@@ -354,6 +354,7 @@ class ModuleParser(_ModuleArgumentParser):
         baseclass: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
         baseclass_as_default: bool = True,
         modules_from_file: bool = False,
+        version: Text = None,
         **kwargs: Any
     ) -> None:
         if baseclass is None:
@@ -372,6 +373,7 @@ class ModuleParser(_ModuleArgumentParser):
         self._extra_modules: List[Tuple[argparse.Action, type]] = []
         self._module_parsers: Set[argparse.ArgumentParser] = {self}
         self._plugins: Dict[Type[ModuleParserPlugin], Optional[BaseModule]] = {}
+        self.version = version
 
         self.baseclasses: Tuple[Type[BaseModule], ...] = self._get_baseclasses(baseclass)
 
@@ -398,6 +400,12 @@ class ModuleParser(_ModuleArgumentParser):
                 default=self.default_class,
                 choices=choices,  # type: ignore
                 help=help_text
+            )
+        if self.version:
+            self.add_argument(
+                '-V', '--version',
+                action='version',
+                version=self.version
             )
 
     def _get_baseclasses(self, baseclass: Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]) -> Tuple[Type[BaseModule], ...]:
