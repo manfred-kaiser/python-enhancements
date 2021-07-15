@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.5] - 2021-07-15
 
+### Fixed
+
+- fixed bug when loading modules from entrypoints
+
+## [0.2.5] - 2021-07-15
+
 ### Added
 
 - added option to load entrypoint by name or class
@@ -58,7 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - removed classproperty from Module and renamed Module to BaseModule
 
 
-[Unreleased]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.5...develop
+[Unreleased]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.6...develop
+[0.2.6]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.5...0.2.6
 [0.2.5]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.4...0.2.5
 [0.2.4]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.3...0.2.4
 [0.2.3]: https://github.com/manfred-kaiser/python-enhancements/compare/0.2.2...0.2.3
