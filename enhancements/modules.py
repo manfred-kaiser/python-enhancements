@@ -241,6 +241,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
 class BaseModule():
     _parser: Optional[_ModuleArgumentParser] = None
+    _parser_group: Optional[argparse._ArgumentGroup] = None
     _modules: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
@@ -291,6 +292,13 @@ class BaseModule():
         if not cls._parser:
             raise ValueError('failed to create ModuleParser for {}'.format(cls))
         return cls._parser
+
+    @classmethod
+    def argument_group(cls) -> argparse._ArgumentGroup:
+        if '_parser_group' not in cls.__dict__:
+            parser = cls.parser()
+            cls._parser_group = parser.add_argument_group(cls.__name__)
+        return cls._parser_group
 
     @classmethod
     def config_section_name(cls) -> Text:  # pylint: disable=E0213
@@ -435,29 +443,42 @@ class ModuleParser(_ModuleArgumentParser):
         modules: Optional[List[Tuple[argparse.Action, Any]]],
         use_modules: bool = False
     ) -> List[argparse.ArgumentParser]:
+
+        def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
+            for entry_point in pkg_resources.iter_entry_points(entrypoint):
+                if entry_point.name == name or entry_point.module_name == name:
+                    return entry_point.load()
+            return None
+
         moduleparsers = []
-        if modules:
-            if not use_modules:
-                modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
-                modulebasecls = [m[1] for m in modules]
-            else:
-                modulelist = [m for m in modules]
-                modulebasecls = [self.baseclasses for _ in modules]
+        if not modules:
+            return moduleparsers
+        if not use_modules:
+            modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
+            modulebasecls = [m[1] for m in modules]
+        else:
+            modulelist = [m for m in modules]
+            modulebasecls = [self.baseclasses for _ in modules]
 
-            for module, baseclass in zip(modulelist, modulebasecls):
-                if not issubclass(module, baseclass):
-                    logging.error('module is not an instance of baseclass')
+        for module, baseclass in zip(modulelist, modulebasecls):
+            if isinstance(module, str):
+                modulecls = load_entry_point(baseclass.__name__, module)
+                if module is None:
                     raise ModuleError(module, baseclass)
-                if module is baseclass:
-                    logging.error('module must not be baseclass!')
-                    raise ModuleError(module, baseclass)
-                moduleparsers.append(module.parser())
+                module = modulecls
+            if not issubclass(module, baseclass):
+                logging.error('module is not an instance of baseclass')
+                raise ModuleError(module, baseclass)
+            if module is baseclass:
+                logging.error('module must not be baseclass!')
+                raise ModuleError(module, baseclass)
+            moduleparsers.append(module.parser())
 
-                try:
-                    parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
-                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
-                except TypeError:
-                    logging.exception("Unable to load modules")
+            try:
+                parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
+                moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
+            except TypeError:
+                logging.exception("Unable to load modules")
         return moduleparsers
 
     def _check_value(self, action: Any, value: Any) -> None:
