@@ -241,6 +241,7 @@ class _ModuleArgumentParser(argparse.ArgumentParser):
 
 class BaseModule():
     _parser: Optional[_ModuleArgumentParser] = None
+    _parser_group: Optional[argparse._ArgumentGroup] = None
     _modules: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
@@ -291,6 +292,13 @@ class BaseModule():
         if not cls._parser:
             raise ValueError('failed to create ModuleParser for {}'.format(cls))
         return cls._parser
+
+    @classmethod
+    def argument_group(cls) -> argparse._ArgumentGroup:
+        if '_parser_group' not in cls.__dict__:
+            parser = cls.parser()
+            cls._parser_group = parser.add_argument_group(cls.__name__)
+        return cls._parser_group
 
     @classmethod
     def config_section_name(cls) -> Text:  # pylint: disable=E0213
