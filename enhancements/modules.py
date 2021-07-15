@@ -140,6 +140,11 @@ def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[
         raise ModuleError(message=traceback.format_exc())
     return modules
 
+def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
+    for entry_point in pkg_resources.iter_entry_points(entrypoint):
+        if entry_point.name == name or entry_point.module_name == name:
+            return entry_point.load()
+    return None
 
 def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name: Optional[str] = None) -> Type['argparse.Action']:
     """Action, um BaseModule mit der Methode "add_module" des ModuleParsers als Kommandozeilenparameter definieren zu können
@@ -171,18 +176,27 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
     return ModuleLoaderAction
 
 
-def append_modules(moduleloader: Optional['ModuleParser'] = None) -> Type['argparse._AppendAction']:
+def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: Type['BaseModule'] = None, use_entrypoints: bool = False) -> Type['argparse._AppendAction']:
     """Action für den ModuleParser um BaseModule als Kommanozeilen Parameter "--module" definieren zu können
     """
     class ModuleLoaderAppendAction(argparse._AppendAction):
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
-            if values:
-                value_array = get_module_class(
+            if not values:
+                return
+            if not use_entrypoints:
+                for module in get_module_class(
                     values, moduleloader,
                     modules_from_file=parser.modules_from_file if isinstance(parser, ModuleParser) else False
-                )
-                for module in value_array:
+                ):
                     super().__call__(parser, namespace, module, option_string)  # type: ignore
+                return
+
+            for basecls in baseclasses:
+                for module in values:
+                    modulecls = load_entry_point(basecls.__name__, module)
+                    if modulecls:
+                        super().__call__(parser, namespace, modulecls, option_string)  # type: ignore
+
     return ModuleLoaderAppendAction
 
 
@@ -378,7 +392,7 @@ class ModuleParser(_ModuleArgumentParser):
                 '-m',
                 '--module',
                 dest='modules',
-                action=append_modules(self),
+                action=append_modules(self, self.baseclasses, bool(entrypoints)),
                 default=self.default_class,
                 choices=choices,  # type: ignore
                 help=help_text
@@ -443,13 +457,6 @@ class ModuleParser(_ModuleArgumentParser):
         modules: Optional[List[Tuple[argparse.Action, Any]]],
         use_modules: bool = False
     ) -> List[argparse.ArgumentParser]:
-
-        def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
-            for entry_point in pkg_resources.iter_entry_points(entrypoint):
-                if entry_point.name == name or entry_point.module_name == name:
-                    return entry_point.load()
-            return None
-
         moduleparsers = []
         if not modules:
             return moduleparsers
