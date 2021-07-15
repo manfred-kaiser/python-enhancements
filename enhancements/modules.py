@@ -444,34 +444,34 @@ class ModuleParser(_ModuleArgumentParser):
         use_modules: bool = False
     ) -> List[argparse.ArgumentParser]:
         moduleparsers = []
-        if modules:
-            if not use_modules:
-                modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
-                modulebasecls = [m[1] for m in modules]
-            else:
-                modulelist = [m for m in modules]
-                modulebasecls = [self.baseclasses for _ in modules]
+        if not modules:
+            return moduleparsers
+        if not use_modules:
+            modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
+            modulebasecls = [m[1] for m in modules]
+        else:
+            modulelist = [m for m in modules]
+            modulebasecls = [self.baseclasses for _ in modules]
 
-            for module, baseclass in zip(modulelist, modulebasecls):
-                if isinstance(module, str):
-                    for entry_point in pkg_resources.iter_entry_points(baseclass.__name__):
-                        print(entry_point.name)
-                        if entry_point.name == module or entry_point.module_name == module:
-                            module = entry_point.load()
-                            break
-                if not issubclass(module, baseclass):
-                    logging.error('module is not an instance of baseclass')
-                    raise ModuleError(module, baseclass)
-                if module is baseclass:
-                    logging.error('module must not be baseclass!')
-                    raise ModuleError(module, baseclass)
-                moduleparsers.append(module.parser())
+        for module, baseclass in zip(modulelist, modulebasecls):
+            if isinstance(module, str):
+                for entry_point in pkg_resources.iter_entry_points(baseclass.__name__):
+                    if entry_point.name == module or entry_point.module_name == module:
+                        module = entry_point.load()
+                        break
+            if not issubclass(module, baseclass):
+                logging.error('module is not an instance of baseclass')
+                raise ModuleError(module, baseclass)
+            if module is baseclass:
+                logging.error('module must not be baseclass!')
+                raise ModuleError(module, baseclass)
+            moduleparsers.append(module.parser())
 
-                try:
-                    parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
-                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
-                except TypeError:
-                    logging.exception("Unable to load modules")
+            try:
+                parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
+                moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
+            except TypeError:
+                logging.exception("Unable to load modules")
         return moduleparsers
 
     def _check_value(self, action: Any, value: Any) -> None:
