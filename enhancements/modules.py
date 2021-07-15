@@ -443,6 +443,13 @@ class ModuleParser(_ModuleArgumentParser):
         modules: Optional[List[Tuple[argparse.Action, Any]]],
         use_modules: bool = False
     ) -> List[argparse.ArgumentParser]:
+
+        def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
+            for entry_point in pkg_resources.iter_entry_points(entrypoint):
+                if entry_point.name == name or entry_point.module_name == name:
+                    return entry_point.load()
+            return None
+
         moduleparsers = []
         if not modules:
             return moduleparsers
@@ -455,10 +462,10 @@ class ModuleParser(_ModuleArgumentParser):
 
         for module, baseclass in zip(modulelist, modulebasecls):
             if isinstance(module, str):
-                for entry_point in pkg_resources.iter_entry_points(baseclass.__name__):
-                    if entry_point.name == module or entry_point.module_name == module:
-                        module = entry_point.load()
-                        break
+                modulecls = load_entry_point(baseclass.__name__, module)
+                if module is None:
+                    raise ModuleError(module, baseclass)
+                module = modulecls
             if not issubclass(module, baseclass):
                 logging.error('module is not an instance of baseclass')
                 raise ModuleError(module, baseclass)
