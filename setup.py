@@ -8,9 +8,15 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+
+def get_version():
+    from enhancements.__version__ import version
+    return version
+
+
 setup(
     name='enhancements',
-    version='0.2.6',
+    version=get_version(),
     author='Manfred Kaiser',
     author_email='manfred.kaiser@logfile.at',
     description='utility library',
