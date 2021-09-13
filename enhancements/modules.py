@@ -492,8 +492,10 @@ class ModuleParser(_ModuleArgumentParser):
             moduleparsers.append(module.parser())
 
             try:
-                parsed_subargs, _ = module.parser().parse_known_args(args=args, namespace=namespace)
-                moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
+                parsed_args = module.parser().parse_known_args(args=args, namespace=namespace)
+                if parsed_args:
+                    parsed_subargs, _ = parsed_args
+                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
             except TypeError:
                 logging.exception("Unable to load modules")
         return moduleparsers
