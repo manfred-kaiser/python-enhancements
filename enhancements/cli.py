@@ -1,8 +1,8 @@
 import sys
-from typing import Text
+from typing import Text, Literal
 
 
-def query_yes_no(question: Text, default: Text = "yes") -> bool:
+def query_yes_no(question: Text, default: Literal['yes', 'no'] = "yes") -> bool:
     """Ask a yes/no question via raw_input() and return their answer.
 
     "question" is a string that is presented to the user.

@@ -83,7 +83,7 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
             self.skip: bool = skip
 
         def __new__(cls, name: Text, value: int, skip: bool = False, *args: Any, **kwargs: Any) -> 'BaseReturnCode.Result':
-            result: 'BaseReturnCode.Result' = super().__new__(cls, value)  # type: ignore
+            result: 'BaseReturnCode.Result' = super().__new__(cls, value)
             result.string = name
             result.skip = skip
             return result

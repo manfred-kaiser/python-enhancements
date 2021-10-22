@@ -35,6 +35,7 @@ from types import ModuleType
 import pkg_resources
 
 from typing import (
+    cast,
     Any,
     List,
     Optional, Sequence,
@@ -84,7 +85,7 @@ def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> 
         return sys.modules[modname_file]
 
     logging.warning('Loading modules from files is not recommended! Please use a python package instead.')
-    loader = importlib.machinery.SourceFileLoader(modname_file, modname)  # type: ignore
+    loader = importlib.machinery.SourceFileLoader(modname_file, modname)
     module: ModuleType = types.ModuleType(loader.name)
     loader.exec_module(module)
     return module
@@ -143,7 +144,7 @@ def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[
 def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
     for entry_point in pkg_resources.iter_entry_points(entrypoint):
         if entry_point.name == name or entry_point.module_name == name:
-            return entry_point.load()
+            return cast(Type['BaseModule'], entry_point.load())
     return None
 
 def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name: Optional[str] = None) -> Type['argparse.Action']:
@@ -213,7 +214,7 @@ def get_entrypoint_modules(entry_point_name: Text) -> Dict[Text, Text]:
     return entrypoints
 
 
-def set_module_kwargs(entry_point_name, **kwargs: Any) -> Dict[Text, Any]:
+def set_module_kwargs(entry_point_name: Text, **kwargs: Any) -> Dict[Text, Any]:
     entrypoints = get_entrypoint_modules(entry_point_name)
     if entrypoints:
         kwargs['choices'] = entrypoints.keys()
@@ -301,7 +302,7 @@ class BaseModule():
     @classmethod
     def parser(cls) -> _ModuleArgumentParser:
         if '_parser' not in cls.__dict__:
-            cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)  # type: ignore
+            cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)
             cls.parser_arguments()
         if not cls._parser:
             raise ValueError('failed to create ModuleParser for {}'.format(cls))
@@ -319,22 +320,22 @@ class BaseModule():
     @classmethod
     def config_section_name(cls) -> Text:  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
-            return cls.__name__  # type: ignore
-        return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)  # type: ignore
+            return cls.__name__
+        return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)
 
 
 class LegacyModule(BaseModule, metaclass=ClassPropertyMeta):
 
     @classproperty
-    def PARSER(cls):
+    def PARSER(cls) -> _ModuleArgumentParser:
         return cls.parser()
 
     @classproperty
-    def MODULES(cls):
+    def MODULES(cls) -> List[Tuple[argparse.Action, Any]]:
         return cls.modules()
 
     @classproperty
-    def config_section(cls):
+    def config_section(cls) -> Text:
         return cls.config_section_name()
 
 
@@ -354,7 +355,7 @@ class ModuleParser(_ModuleArgumentParser):
         baseclass: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
         baseclass_as_default: bool = True,
         modules_from_file: bool = False,
-        version: Text = None,
+        version: Optional[Text] = None,
         **kwargs: Any
     ) -> None:
         if baseclass is None:
@@ -494,6 +495,7 @@ class ModuleParser(_ModuleArgumentParser):
             try:
                 parsed_args = module.parser().parse_known_args(args=args, namespace=namespace)
                 if parsed_args:
+                    parsed_subargs: argparse.Namespace
                     parsed_subargs, _ = parsed_args
                     moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
             except TypeError:
@@ -519,10 +521,12 @@ class ModuleParser(_ModuleArgumentParser):
                 if module is self.baseclasses:
                     raise ModuleError(module, self.baseclasses)
                 self.add_parser(module.parser())
-                parsed_sub_args = module.parser().parse_known_args(args=args, namespace=namespace)
-                submods = self.get_sub_modules(parsed_sub_args, args, namespace, parsed_args.modules, use_modules=True)
-                for submod in submods:
-                    self.add_parser(submod)
+                parsed_sub_args_tuple = module.parser().parse_known_args(args=args, namespace=namespace)
+                if parsed_sub_args_tuple:
+                    parsed_sub_args, _ = parsed_sub_args_tuple
+                    submods = self.get_sub_modules(parsed_sub_args, args, namespace, parsed_args.modules, use_modules=True)
+                    for submod in submods:
+                        self.add_parser(submod)
 
         # load modules from add_module method
         moduleparsers = self.get_sub_modules(parsed_args, args, namespace, self._extra_modules)
