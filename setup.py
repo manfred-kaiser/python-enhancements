@@ -41,4 +41,7 @@ setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Development Status :: 5 - Production/Stable"
     ],
+    install_requires=[
+        'typing_extensions'
+    ]
 )

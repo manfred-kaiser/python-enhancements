@@ -1,5 +1,6 @@
 import sys
-from typing import Text, Literal
+from typing import Text
+from typing_extensions import Literal
 
 
 def query_yes_no(question: Text, default: Literal['yes', 'no'] = "yes") -> bool:
