@@ -11,7 +11,7 @@ from typing import (
     Optional,
     Union
 )
-
+from typeguard import typechecked
 from enhancements.config import ExtendedConfigParser
 
 
@@ -66,10 +66,12 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
     COMPERATOR: Callable[[Any, Any], bool] = operator.gt
 
     class Action():
+        @typechecked
         def __init__(self, cls: Type['BaseReturnCode'], result: 'BaseReturnCode.Result') -> None:
             self.cls: Type['BaseReturnCode'] = cls
             self.result: 'BaseReturnCode.Result' = result
 
+        @typechecked
         def __call__(self) -> 'BaseReturnCode':
             return self.cls(self.result)
 
@@ -77,47 +79,59 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
 
         BASERESULT: Optional[Type['BaseReturnCode']] = None
 
+        @typechecked
         def __init__(self, name: Text, value: int, skip: bool = False):
             super().__init__()
             self.string: Text = name
             self.skip: bool = skip
 
+        @typechecked
         def __new__(cls, name: Text, value: int, skip: bool = False, *args: Any, **kwargs: Any) -> 'BaseReturnCode.Result':
             result: 'BaseReturnCode.Result' = super().__new__(cls, value)
             result.string = name
             result.skip = skip
             return result
 
+        @typechecked
         def __str__(self) -> Text:
             return self.string
 
+        @typechecked
         def __hash__(self) -> int:
             return int(self)
 
+        @typechecked
         def __eq__(self, other: Any) -> bool:
             return super().__eq__(self.convert(other))
 
+        @typechecked
         def __ne__(self, other: Any) -> bool:
             return super().__ne__(self.convert(other))
 
+        @typechecked
         def __lt__(self, other: Any) -> bool:
             return super().__lt__(self.convert(other))
 
+        @typechecked
         def __gt__(self, other: Any) -> bool:
             return super().__gt__(self.convert(other))
 
+        @typechecked
         def __le__(self, other: Any) -> bool:
             return super().__le__(self.convert(other))
 
+        @typechecked
         def __ge__(self, other: Any) -> bool:
             return super().__ge__(self.convert(other))
 
         @classmethod
+        @typechecked
         def convert(cls, value: Any) -> 'BaseReturnCode.Result':
             if not cls.BASERESULT:
                 raise ValueError('Class not configured')
             return cls.BASERESULT.convert(value)
 
+    @typechecked
     def __init__(
         self,
         result: Union['BaseReturnCode.Result', int, Text]
@@ -133,14 +147,17 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         self.set_result(value)
 
     @classmethod
+    @typechecked
     def min(cls) -> 'BaseReturnCode.Result':
         return cls.convert(min(cls.get_results().keys()))
 
     @classmethod
+    @typechecked
     def max(cls) -> 'BaseReturnCode.Result':
         return cls.convert(max(cls.get_results().keys()))
 
     @classmethod
+    @typechecked
     def get_score(cls, *returnvalues: 'BaseReturnCode.Result') -> 'BaseReturnCode.Result':
         if cls.CONFIGFILE:
             result = cls.convert(cls.config.get('Result', 'initial'))
@@ -155,9 +172,11 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         return result
 
     @classmethod
+    @typechecked
     def _compare(cls, a: Any, b: Any) -> bool:
         return cls.COMPERATOR(a, b)
 
+    @typechecked
     def set_result(self, value: Union['BaseReturnCode.Result', int, Text], force: bool = False) -> bool:
         if self._compare(value, self._result) or force:
             new_value = self.convert(value)
@@ -168,14 +187,17 @@ class BaseReturnCode(metaclass=ReturnCodeMeta):
         return False
 
     @classmethod
+    @typechecked
     def get_results(cls) -> Dict[int, 'BaseReturnCode.Result']:
         return {int(x): x for x in cls.__dict__.values() if isinstance(x, cls.Result)}
 
     @classmethod
+    @typechecked
     def get_result_types(cls) -> List[Text]:
         return [x.string for x in cls.__dict__.values() if isinstance(x, cls.Result)]
 
     @classmethod
+    @typechecked
     def convert(cls, value: Any) -> 'BaseReturnCode.Result':
         results = cls.get_results()
         if isinstance(value, cls.Result):
