@@ -49,7 +49,6 @@ from typing import (
     Union
 )
 
-from enhancements.classproperty import classproperty, ClassPropertyMeta
 from enhancements.exceptions import ModuleFromFileException
 
 
