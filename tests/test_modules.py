@@ -74,12 +74,12 @@ def test_get_module_class():
     assert issubclass(modules2[0], BaseModule)
 
     # try to load empty module list
-    modules = get_module_class(None)
-    assert isinstance(modules, list)
-    assert not modules
+    with pytest.raises(TypeError):
+        modules = get_module_class(None)
 
     # try to load invalid package and class
-    assert not get_module_class(1234)
+    with pytest.raises(TypeError):
+        assert not get_module_class(1234)
 
 
 def test_module_parser():
@@ -90,7 +90,7 @@ def test_module_parser():
     assert issubclass(hex_dump_module, ExampleModule)
     assert hex_dump_module.parser()._actions[0].dest == 'hexwidth'
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         ModuleParser(baseclass=NoModuleClass)
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -133,20 +133,6 @@ def test_module():
         HexDump(hexwidth='wrong_type')
     assert HexDump.config_section_name() == 'HexDump'
     assert ExampleSubModule.config_section_name() == 'Examples:ExampleSubModule'
-
-
-def test_module_legacy():
-    from enhancements.modules import LegacyModule, Module, _ModuleArgumentParser
-
-    class LegacyTestModule(Module):
-        pass
-
-    test_legacy_module = LegacyTestModule()
-    assert isinstance(test_legacy_module, BaseModule)
-    assert isinstance(test_legacy_module, LegacyModule)
-    assert isinstance(test_legacy_module, Module)
-    assert isinstance(test_legacy_module.PARSER, _ModuleArgumentParser)
-    assert LegacyTestModule.config_section == 'LegacyTestModule'
 
 
 def test_sub_modules():

@@ -53,6 +53,7 @@ from enhancements.classproperty import classproperty, ClassPropertyMeta
 from enhancements.exceptions import ModuleFromFileException
 
 
+@typechecked
 def _split_module_string(modulearg: Text, moduleloader: Optional['ModuleParser'] = None) -> Tuple[Text, Text]:
     """split a string in a module/path and the functionname
 
@@ -69,6 +70,7 @@ def _split_module_string(modulearg: Text, moduleloader: Optional['ModuleParser']
     return modname, funcname
 
 
+@typechecked
 def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> ModuleType:
     """Prüfen, ob das Modul von einem Package oder einer Datei geladen werden soll
 
@@ -93,6 +95,7 @@ def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> 
     return module
 
 
+@typechecked
 def _get_valid_module_class(module: ModuleType, funcname: Text) -> Type['BaseModule']:
     """Prüfen, ob das angeforderte Modul existiert und gibt die Klasse zurück
     """
@@ -104,6 +107,7 @@ def _get_valid_module_class(module: ModuleType, funcname: Text) -> Type['BaseMod
     return handlerclass
 
 
+@typechecked
 def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[Text, Type['BaseModule']]]], moduleloader: Optional['ModuleParser'] = None, modules_from_file: bool = False) -> List[Type['BaseModule']]:
     """Lädt eine Klasse anhand eines Strings.
 
@@ -143,12 +147,16 @@ def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[
         raise ModuleError(message=traceback.format_exc())
     return modules
 
+
+@typechecked
 def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
     for entry_point in pkg_resources.iter_entry_points(entrypoint):
         if entry_point.name == name or entry_point.module_name == name:
             return cast(Type['BaseModule'], entry_point.load())
     return None
 
+
+@typechecked
 def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name: Optional[str] = None) -> Type['argparse.Action']:
     """Action, um BaseModule mit der Methode "add_module" des ModuleParsers als Kommandozeilenparameter definieren zu können
     """
@@ -179,6 +187,7 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
     return ModuleLoaderAction
 
 
+@typechecked
 def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: Optional[Tuple[Type['BaseModule'], ...]] = None, use_entrypoints: bool = False) -> Type['argparse._AppendAction']:
     """Action für den ModuleParser um BaseModule als Kommanozeilen Parameter "--module" definieren zu können
     """
@@ -203,6 +212,7 @@ def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: O
     return ModuleLoaderAppendAction
 
 
+@typechecked
 def get_entrypoint_modules(entry_point_name: Text) -> Dict[Text, Text]:
     entrypoints = {}
     for entry_point in pkg_resources.iter_entry_points(entry_point_name):
@@ -216,6 +226,7 @@ def get_entrypoint_modules(entry_point_name: Text) -> Dict[Text, Text]:
     return entrypoints
 
 
+@typechecked
 def set_module_kwargs(entry_point_name: Text, **kwargs: Any) -> Dict[Text, Any]:
     entrypoints = get_entrypoint_modules(entry_point_name)
     if entrypoints:
@@ -227,6 +238,7 @@ def set_module_kwargs(entry_point_name: Text, **kwargs: Any) -> Dict[Text, Any]:
 
 class ModuleError(Exception):
 
+    @typechecked
     def __init__(
         self,
         moduleclass: Optional[Union[Type['BaseModule'], Tuple[Type['BaseModule'], ...]]] = None,
@@ -246,10 +258,12 @@ class InvalidModuleArguments(Exception):
 class _ModuleArgumentParser(argparse.ArgumentParser):
     """Enhanced ArgumentParser to suppress warnings and error during module parsing"""
 
+    @typechecked
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.exit_on_error = True
 
+    @typechecked
     def error(self, message: Text) -> None:  # type: ignore
         if self.exit_on_error:
             return
@@ -262,6 +276,7 @@ class BaseModule():
     _modules: Optional[List[Tuple[argparse.Action, Any]]] = None
     CONFIG_PREFIX: Optional[Text] = None
 
+    @typechecked
     def __init__(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None, **kwargs: Any) -> None:
         self.args: argparse.Namespace
         parser_retval = self.parser().parse_known_args(args, namespace)
@@ -280,6 +295,7 @@ class BaseModule():
             setattr(self.args, param_name, param_value)
 
     @classmethod
+    @typechecked
     def add_module(cls, *args: Any, **kwargs: Any) -> None:
         # remove "baseclass" from arguments
         baseclass: Type[BaseModule] = kwargs.pop('baseclass', BaseModule)
@@ -292,16 +308,19 @@ class BaseModule():
             cls.modules().append((cls.parser().add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
 
     @classmethod
+    @typechecked
     def parser_arguments(cls) -> None:
         pass
 
     @classmethod
+    @typechecked
     def modules(cls) -> List[Tuple[argparse.Action, Any]]:
         if '_modules' not in cls.__dict__ or cls._modules is None:
             cls._modules = []
         return cls._modules
 
     @classmethod
+    @typechecked
     def parser(cls) -> _ModuleArgumentParser:
         if '_parser' not in cls.__dict__:
             cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)
@@ -311,6 +330,7 @@ class BaseModule():
         return cls._parser
 
     @classmethod
+    @typechecked
     def argument_group(cls) -> argparse._ArgumentGroup:
         if '_parser_group' not in cls.__dict__:
             parser = cls.parser()
@@ -320,29 +340,11 @@ class BaseModule():
         return cls._parser_group
 
     @classmethod
+    @typechecked
     def config_section_name(cls) -> Text:  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
             return cls.__name__
         return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)
-
-
-class LegacyModule(BaseModule, metaclass=ClassPropertyMeta):
-
-    @classproperty
-    def PARSER(cls) -> _ModuleArgumentParser:
-        return cls.parser()
-
-    @classproperty
-    def MODULES(cls) -> List[Tuple[argparse.Action, Any]]:
-        return cls.modules()
-
-    @classproperty
-    def config_section(cls) -> Text:
-        return cls.config_section_name()
-
-
-class Module(LegacyModule):
-    pass
 
 
 class ModuleParserPlugin(BaseModule):
@@ -351,6 +353,7 @@ class ModuleParserPlugin(BaseModule):
 
 class ModuleParser(_ModuleArgumentParser):
 
+    @typechecked
     def __init__(
         self,
         default: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
@@ -411,6 +414,7 @@ class ModuleParser(_ModuleArgumentParser):
                 version=self.version
             )
 
+    @typechecked
     def _get_baseclasses(self, baseclass: Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]) -> Tuple[Type[BaseModule], ...]:
         # set default as baseclass if baseclass is not set
         _baseclasses: List[Type[BaseModule]] = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
@@ -429,11 +433,13 @@ class ModuleParser(_ModuleArgumentParser):
     def parser(self) -> 'ModuleParser':
         return self
 
+    @typechecked
     def add_plugin(self, plugin: Type[ModuleParserPlugin]) -> None:
         if not inspect.isclass(plugin) or not issubclass(plugin, ModuleParserPlugin):
             raise ValueError("plugin must be a class and subclass of BaseModule!")
         self._plugins[plugin] = None
 
+    @typechecked
     def add_parser(self, parser: argparse.ArgumentParser) -> None:
         for module_parser in self._module_parsers:
             if module_parser.description == parser.description:
@@ -443,6 +449,7 @@ class ModuleParser(_ModuleArgumentParser):
         # append parser to list
         self._module_parsers.add(parser)
 
+    @typechecked
     def add_module(self, *args: Any, **kwargs: Any) -> None:
         # remove "baseclass" from arguments
         baseclass = kwargs.pop('baseclass', BaseModule)
@@ -459,6 +466,7 @@ class ModuleParser(_ModuleArgumentParser):
         self._extra_modules.append((self.add_argument(*args, **set_module_kwargs(baseclass.__name__, **kwargs)), baseclass))
         logging.debug("Baseclass: %s", baseclass)
 
+    @typechecked
     def get_module_path(self, module: Text) -> Text:
         return module
 
@@ -526,9 +534,11 @@ class ModuleParser(_ModuleArgumentParser):
                 logging.exception("Unable to load modules")
         return moduleparsers
 
+    @typechecked
     def _check_value(self, action: Any, value: Any) -> None:
         pass
 
+    @typechecked
     def _create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> 'argparse.ArgumentParser':
         parsed_args_tuple = super().parse_known_args(args=args, namespace=namespace)
         if not parsed_args_tuple:
@@ -581,6 +591,7 @@ class ModuleParser(_ModuleArgumentParser):
         parser = argparse.ArgumentParser(parents=list(self._module_parsers), **self.__kwargs)
         return parser
 
+    @typechecked
     def parse_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> argparse.Namespace:  # type: ignore
         parser = self._create_parser(args=args, namespace=namespace)
         args_namespace = parser.parse_args(args, namespace)
@@ -588,6 +599,7 @@ class ModuleParser(_ModuleArgumentParser):
             return argparse.Namespace()
         return args_namespace
 
+    @typechecked
     def parse_known_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> Tuple[argparse.Namespace, List[str]]:
         parser = self._create_parser(args=args, namespace=namespace)
         return parser.parse_known_args(args, namespace)
