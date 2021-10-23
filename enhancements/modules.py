@@ -34,6 +34,8 @@ import traceback
 from types import ModuleType
 import pkg_resources
 
+from typeguard import typechecked
+
 from typing import (
     cast,
     Any,
@@ -460,23 +462,40 @@ class ModuleParser(_ModuleArgumentParser):
     def get_module_path(self, module: Text) -> Text:
         return module
 
-    def get_sub_modules(
+    @typechecked
+    def get_sub_modules_args(
         self,
+        *,
         parsed_args: argparse.Namespace,
         args: Optional[Sequence[Text]],
         namespace: Optional[argparse.Namespace],
-        modules: Optional[List[Tuple[argparse.Action, Any]]],
-        use_modules: bool = False
+        modules: List[Tuple[argparse.Action, Type[BaseModule]]],
+    ) -> List[argparse.ArgumentParser]:
+        modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
+        modulebasecls: List[Tuple[Type[BaseModule], ...]] = [(m[1], ) for m in modules]
+        return self.get_sub_modules(
+            parsed_args=parsed_args,
+            args=args,
+            namespace=namespace,
+            modules=modulelist,
+            baseclasses=modulebasecls
+        )
+
+    @typechecked
+    def get_sub_modules(
+        self,
+        *,
+        parsed_args: argparse.Namespace,
+        args: Optional[Sequence[Text]],
+        namespace: Optional[argparse.Namespace],
+        modules: Optional[List[Type[BaseModule]]],
+        baseclasses: Optional[List[Tuple[Type[BaseModule], ...]]] = None,
     ) -> List[argparse.ArgumentParser]:
         moduleparsers: List[argparse.ArgumentParser] = []
         if not modules:
             return moduleparsers
-        if not use_modules:
-            modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
-            modulebasecls = [m[1] for m in modules]
-        else:
-            modulelist = [m for m in modules]
-            modulebasecls = [self.baseclasses for _ in modules]
+        modulelist = [m for m in modules]
+        modulebasecls = baseclasses or [self.baseclasses for _ in modules]
 
         for module, baseclass in zip(modulelist, modulebasecls):
             if isinstance(module, str):
@@ -493,11 +512,16 @@ class ModuleParser(_ModuleArgumentParser):
             moduleparsers.append(module.parser())
 
             try:
-                parsed_args = module.parser().parse_known_args(args=args, namespace=namespace)
-                if parsed_args:
+                parsed_known_args = module.parser().parse_known_args(args=args, namespace=namespace)
+                if parsed_known_args:
                     parsed_subargs: argparse.Namespace
-                    parsed_subargs, _ = parsed_args
-                    moduleparsers.extend(self.get_sub_modules(parsed_subargs, args, namespace, module.modules()))
+                    parsed_subargs, _ = parsed_known_args
+                    moduleparsers.extend(self.get_sub_modules_args(
+                        parsed_args=parsed_subargs,
+                        args=args,
+                        namespace=namespace,
+                        modules=module.modules()
+                    ))
             except TypeError:
                 logging.exception("Unable to load modules")
         return moduleparsers
@@ -524,12 +548,22 @@ class ModuleParser(_ModuleArgumentParser):
                 parsed_sub_args_tuple = module.parser().parse_known_args(args=args, namespace=namespace)
                 if parsed_sub_args_tuple:
                     parsed_sub_args, _ = parsed_sub_args_tuple
-                    submods = self.get_sub_modules(parsed_sub_args, args, namespace, parsed_args.modules, use_modules=True)
+                    submods = self.get_sub_modules(
+                        parsed_args=parsed_sub_args,
+                        args=args,
+                        namespace=namespace,
+                        modules=parsed_args.modules
+                    )
                     for submod in submods:
                         self.add_parser(submod)
 
         # load modules from add_module method
-        moduleparsers = self.get_sub_modules(parsed_args, args, namespace, self._extra_modules)
+        moduleparsers = self.get_sub_modules_args(
+            parsed_args=parsed_args,
+            args=args,
+            namespace=namespace,
+            modules=self._extra_modules
+        )
         for moduleparser in moduleparsers:
             self.add_parser(moduleparser)
 
