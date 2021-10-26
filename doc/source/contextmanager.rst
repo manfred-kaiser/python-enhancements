@@ -1,18 +1,18 @@
 Context Manager
 ===============
 
-Context Manager in Python können verwendet werden um die Ausführung eines Scriptes zu beeinflussen.
+Context managers in Python can be used to influence the execution of a script.
 
-Eine ausführliche Dokumenation, was ein Context Manager ist und wie diese erstllt werden finden Sie unter: https://docs.python.org/3/library/contextlib.html
+A detailed documentation of what a context manager is and how to create them can be found at: https://docs.python.org/3/library/contextlib.html
 
-Die Enhancmend-Library beinhalten eine Sammlung an Context Managern, die sie in Ihren Programmen verwenden können.
+The Enhancmend library contains a collection of context managers that you can use in your programs.
 
 
 Memory Limit
 ------------
 
-Mit dem Memory Limit Context Manager ist es möglich die Ausführung eines Scriptes so zu beeinflussen,
-dass der vom Contex Manager behandelte Code abgebrochen werden kann, sobald mehr Arbeitsspeicher benötigt wird als angegeben.
+With the Memory Limit Context Manager it is possible to influence the execution of a script in such a way,
+that the code handled by the Contex Manager can be aborted as soon as more memory is required than specified.
 
 .. code-block:: python
 
@@ -29,7 +29,7 @@ dass der vom Contex Manager behandelte Code abgebrochen werden kann, sobald mehr
 ExceptionHandler
 ----------------
 
-Mit dem ExceptionHandler ist es möglich Exceptions zu speichern und diese später weiterzuverarbeiten.
+With the ExceptionHandler it is possible to store exceptions and process them later.
 
 .. code-block:: python
 
