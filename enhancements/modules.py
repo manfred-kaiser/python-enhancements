@@ -98,7 +98,7 @@ def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> 
 def _get_valid_module_class(module: ModuleType, funcname: Text) -> Type['BaseModule']:
     """Prüfen, ob das angeforderte Modul existiert und gibt die Klasse zurück
     """
-    handlerclass: Type['BaseModule'] = getattr(module, funcname, None)
+    handlerclass: Type['BaseModule'] = cast(Type['BaseModule'], getattr(module, funcname, None))
     # Prüfen, ob das angeforderte Modul eine Subklasse von BaseModule ist
     if not handlerclass or not isinstance(handlerclass, type) or not issubclass(handlerclass, BaseModule):
         logging.error("BaseModule %s is not subclass of BaseModule!", type(handlerclass))
