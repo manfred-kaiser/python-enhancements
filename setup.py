@@ -42,7 +42,6 @@ setup(
         "Development Status :: 5 - Production/Stable"
     ],
     install_requires=[
-        'typing_extensions',
         'typeguard'
     ]
 )
