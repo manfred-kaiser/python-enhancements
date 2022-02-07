@@ -18,8 +18,8 @@ setup(
     name='enhancements',
     version=get_version(),
     author='Manfred Kaiser',
-    author_email='manfred.kaiser@logfile.at',
-    description='utility library',
+    author_email='manfred.kaiser@ssh-mitm.at',
+    description='Plugin System for SSH-MITM server',
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords="development configparser argparse",
@@ -30,8 +30,8 @@ setup(
     },
     url="https://enhancements.readthedocs.io/",
     project_urls={
-        'Source': 'https://github.com/manfred-kaiser/python-enhancements',
-        'Tracker': 'https://github.com/manfred-kaiser/python-enhancements/issues',
+        'Source': 'https://github.com/ssh-mitm/python-enhancements',
+        'Tracker': 'https://github.com/ssh-mitm/python-enhancements/issues',
     },
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -41,4 +41,8 @@ setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Development Status :: 5 - Production/Stable"
     ],
+    install_requires=[
+        'typing_extensions',
+        'typeguard'
+    ]
 )

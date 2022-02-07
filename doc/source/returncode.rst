@@ -1,12 +1,12 @@
 ReturnCode
 ==========
 
-Die Klasse ReturnCode kann verwendet werden, um ReturnCodes für Programme oder Funktionen zu definieren.
+The ReturnCode class can be used to define ReturnCodes for programs or functions.
 
-Mit dieser Klasse kann sichergestellt werden, dass ein ReturnCode nur dann geändert wird, wenn dieser eine höhere Priorität besitzt,
-als der bereits gepeicherte.
+This class can be used to ensure that a ReturnCode is only changed if it has a higher priority,
+than the already stored one.
 
-Standardmäßig wird der neue Wert nur dann gesetzt, wenn der neue Wert größer ist, als der aktuelle Wert.
+By default, the new value is only set if the new value is greater than the current value.
 
 
 
@@ -26,13 +26,12 @@ Beispiel
         Error = Result('error', 12)
 
 
-Die Klasse muss von ``BaseReturnCode`` erben und eine innere Klasse ``Result`` besitzen, die von ``BaseReturnCode.Result`` erbt.
+The class must inherit from ``BaseReturnCode`` and have an inner class ``Result`` that inherits from ``BaseReturnCode.Result``.
 
-Die Ergebnisse müssen dann die abgeleitete Result Klasse verwenden.
+The results must then use the derived Result class.
 
 .. note::
 
-    Sollte die Result Klasse fehlen oder die Werte nicht die abgeleiteten Klasse verwenden, wird eine Exception geworfen und die Erstellung
-    der Klasse wird abgebrochen.
+    If the Result class is missing or the values do not use the derived class, an exception is thrown and the creation of the class is aborted.
 
-    Der Grund für das Erstellen einer abgeleiteten Result Klasse ist, dass nicht ausversehen Ergebnisse von einer anderen Result Klasse verwendet werden.
+    The reason for creating a derived Result class is to avoid accidentally using results from another Result class.
