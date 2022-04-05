@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2022-04-05
+
+### Added
+
+- added support for bash completion with argcomplete
+
 ## [0.3.0] - 2022-02-07
+
+### Added
+
+- runtime typechecking
+
+### Removed
+
+- removed classproperties
+
+### Fixed
+
+- fixed error when using validators
+- improved typ hints
+- fixed compatibility with pyhon3.6
 
 ## [0.2.7] - 2021-07-19
 
@@ -72,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - removed classproperty from Module and renamed Module to BaseModule
 
 
-[Unreleased]: https://github.com/ssh-mitm/python-enhancements/compare/0.3.0...develop
+[Unreleased]: https://github.com/ssh-mitm/python-enhancements/compare/0.4.0...develop
+[0.4.0]: https://github.com/ssh-mitm/python-enhancements/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/ssh-mitm/python-enhancements/compare/0.2.7...0.3.0
 [0.2.7]: https://github.com/ssh-mitm/python-enhancements/compare/0.2.6...0.2.7
 [0.2.6]: https://github.com/ssh-mitm/python-enhancements/compare/0.2.5...0.2.6
