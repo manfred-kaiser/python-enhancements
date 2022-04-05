@@ -33,6 +33,7 @@ import inspect
 import traceback
 from types import ModuleType
 import pkg_resources
+import argcomplete
 
 from typeguard import typechecked
 
@@ -360,6 +361,7 @@ class ModuleParser(_ModuleArgumentParser):
         baseclass_as_default: bool = True,
         modules_from_file: bool = False,
         version: Optional[Text] = None,
+        autocomplete: bool = False,
         **kwargs: Any
     ) -> None:
         if baseclass is None:
@@ -378,7 +380,8 @@ class ModuleParser(_ModuleArgumentParser):
         self._extra_modules: List[Tuple[argparse.Action, type]] = []
         self._module_parsers: Set[argparse.ArgumentParser] = {self}
         self._plugins: Dict[Type[ModuleParserPlugin], Optional[BaseModule]] = {}
-        self.version = version
+        self.version: Optional[Text] = version
+        self.autocomplete: bool = autocomplete
 
         self.baseclasses: Tuple[Type[BaseModule], ...] = self._get_baseclasses(baseclass)
 
@@ -593,6 +596,8 @@ class ModuleParser(_ModuleArgumentParser):
     @typechecked
     def parse_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> argparse.Namespace:  # type: ignore
         parser = self._create_parser(args=args, namespace=namespace)
+        if self.autocomplete:
+            argcomplete.autocomplete(parser)
         args_namespace = parser.parse_args(args, namespace)
         if not args_namespace:
             return argparse.Namespace()
@@ -601,4 +606,6 @@ class ModuleParser(_ModuleArgumentParser):
     @typechecked
     def parse_known_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> Tuple[argparse.Namespace, List[str]]:
         parser = self._create_parser(args=args, namespace=namespace)
+        if self.autocomplete:
+            argcomplete.autocomplete(parser)
         return parser.parse_known_args(args, namespace)
