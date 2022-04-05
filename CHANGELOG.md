@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- added support for bash completion with argcomplete
+
 ## [0.3.0] - 2022-02-07
+
+### Added
+
+- runtime typechecking
+
+### Removed
+
+- removed classproperties
+
+### Fixed
+
+- fixed error when using validators
+- improved typ hints
+- fixed compatibility with pyhon3.6
 
 ## [0.2.7] - 2021-07-19
 
