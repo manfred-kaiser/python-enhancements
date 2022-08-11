@@ -39,7 +39,6 @@ from colored.colored import attr, fg, stylize  # type: ignore
 from typeguard import typechecked
 
 from typing import (
-    Callable,
     cast,
     Any,
     List,
@@ -375,7 +374,7 @@ class ModuleFormatter(argparse.HelpFormatter):
     class _Section():
 
         @typechecked
-        def __init__(self, formatter: argparse.HelpFormatter, parent: Any, heading: Optional[Text]=None) -> None:
+        def __init__(self, formatter: argparse.HelpFormatter, parent: Any, heading: Optional[Text] = None) -> None:
             self.formatter = formatter
             self.parent = parent
             self.heading = heading
