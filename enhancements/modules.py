@@ -39,6 +39,7 @@ from colored.colored import attr, fg, stylize  # type: ignore
 from typeguard import typechecked
 
 from typing import (
+    Callable,
     cast,
     Any,
     List,
@@ -371,15 +372,17 @@ class ModuleFormatter(argparse.HelpFormatter):
     provided by the class are considered an implementation detail.
     """
 
-    class _Section(argparse.HelpFormatter._Section):
+    class _Section():
 
-        def __init__(self, formatter, parent, heading=None):
+        @typechecked
+        def __init__(self, formatter: argparse.HelpFormatter, parent: Any, heading: Optional[Text]=None) -> None:
             self.formatter = formatter
             self.parent = parent
             self.heading = heading
-            self.items = []
+            self.items = []  # type: ignore
 
-        def format_help(self):
+        @typechecked
+        def format_help(self) -> Text:
             # format the indented section
             if self.parent is not None:
                 self.formatter._indent()
@@ -402,7 +405,8 @@ class ModuleFormatter(argparse.HelpFormatter):
             # join the section-initial newline, the heading and the help
             return join(['\n', heading, item_help, '\n'])
 
-    def _split_lines(self, text, width):
+    @typechecked
+    def _split_lines(self, text: Text, width: int) -> List[Text]:
         return text.splitlines()
 
 
