@@ -365,6 +365,47 @@ class ModuleParserPlugin(BaseModule):
     pass
 
 
+class ModuleFormatter(argparse.HelpFormatter):
+    """Help message formatter which retains formatting of all help text.
+    Only the name of this class is considered a public API. All the methods
+    provided by the class are considered an implementation detail.
+    """
+
+    class _Section(argparse.HelpFormatter._Section):
+
+        def __init__(self, formatter, parent, heading=None):
+            self.formatter = formatter
+            self.parent = parent
+            self.heading = heading
+            self.items = []
+
+        def format_help(self):
+            # format the indented section
+            if self.parent is not None:
+                self.formatter._indent()
+            join = self.formatter._join_parts
+            item_help = join([func(*args) for func, args in self.items])
+            if self.parent is not None:
+                self.formatter._dedent()
+
+            # return nothing if the section was empty
+            if not item_help:
+                return ''
+
+            # add the heading if the section was non-empty
+            if self.heading is not argparse.SUPPRESS and self.heading is not None:
+                current_indent = self.formatter._current_indent
+                heading = '%*s%s:\n' % (current_indent, '', stylize(self.heading, fg('red') + attr('bold')))
+            else:
+                heading = ''
+
+            # join the section-initial newline, the heading and the help
+            return join(['\n', heading, item_help, '\n'])
+
+    def _split_lines(self, text, width):
+        return text.splitlines()
+
+
 class ModuleParser(_ModuleArgumentParser):
 
     @typechecked
@@ -389,7 +430,7 @@ class ModuleParser(_ModuleArgumentParser):
                 raise ValueError("baseclass must be tuple or subclass of BaseModule")
 
         if 'formatter_class' not in kwargs:
-            kwargs['formatter_class'] = argparse.RawTextHelpFormatter
+            kwargs['formatter_class'] = ModuleFormatter
 
         super().__init__(add_help=False, **kwargs)
         self.modules_from_file: bool = modules_from_file
