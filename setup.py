@@ -45,6 +45,7 @@ setup(
     ],
     install_requires=[
         'argcomplete',
+        'colored',
         'typeguard'
     ]
 )

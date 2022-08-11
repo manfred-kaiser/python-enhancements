@@ -33,7 +33,8 @@ import inspect
 import traceback
 from types import ModuleType
 import pkg_resources
-import argcomplete
+import argcomplete  # type: ignore
+from colored.colored import attr, fg, stylize  # type: ignore
 
 from typeguard import typechecked
 
@@ -219,19 +220,32 @@ def get_entrypoint_modules(entry_point_name: Text) -> Dict[Text, Text]:
         entry_point_cls = entry_point.load()
         entry_point_desc = "" if entry_point_cls.__doc__ is None else entry_point_cls.__doc__.split("\n")[0]
         if entry_point_desc:
-            entry_point_description = "\t* {} -> {}".format(entry_point.name, entry_point_desc)
+            entry_point_description = f"\t* {stylize(entry_point.name, fg('blue'))} -> {entry_point_desc}"
         else:
-            entry_point_description = "\t* {}".format(entry_point.name)
+            entry_point_description = f"\t* {stylize(entry_point.name, fg('blue'))}"
         entrypoints[entry_point.name] = entry_point_description
+    return entrypoints
+
+
+@typechecked
+def get_entrypoints(entry_point_name: Text) -> Dict[Type['BaseModule'], Text]:
+    entrypoints = {}
+    for entry_point in pkg_resources.iter_entry_points(entry_point_name):
+        entrypoints[entry_point.load()] = entry_point.name
     return entrypoints
 
 
 @typechecked
 def set_module_kwargs(entry_point_name: Text, **kwargs: Any) -> Dict[Text, Any]:
     entrypoints = get_entrypoint_modules(entry_point_name)
+    entrypoint_classes = get_entrypoints(entry_point_name)
     if entrypoints:
         kwargs['choices'] = entrypoints.keys()
         kwargs['help'] = kwargs.get('help') or ""
+        default_value = kwargs.get('default', None)
+        if default_value in entrypoint_classes:
+            default_name = entrypoint_classes[default_value]
+            kwargs['help'] += f"\ndefault module: {stylize(default_name, fg('blue') + attr('bold'))}"
         kwargs['help'] += "\navailable modules:\n{}".format("\n".join(entrypoints.values()))
     return kwargs
 
@@ -368,8 +382,11 @@ class ModuleParser(_ModuleArgumentParser):
             baseclass = ()
 
         # check if baseclass is set and baseclasses is tuple or subclass of BaseModule
-        if not isinstance(baseclass, tuple) and (not inspect.isclass(baseclass) or not issubclass(baseclass, BaseModule)):
-            raise ValueError("baseclass must be tuple or subclass of BaseModule")
+        if not isinstance(baseclass, tuple):
+            baseclass = (baseclass,)
+        for bcls in baseclass:
+            if not inspect.isclass(bcls) or not issubclass(bcls, BaseModule):
+                raise ValueError("baseclass must be tuple or subclass of BaseModule")
 
         if 'formatter_class' not in kwargs:
             kwargs['formatter_class'] = argparse.RawTextHelpFormatter
@@ -383,7 +400,7 @@ class ModuleParser(_ModuleArgumentParser):
         self.version: Optional[Text] = version
         self.autocomplete: bool = autocomplete
 
-        self.baseclasses: Tuple[Type[BaseModule], ...] = self._get_baseclasses(baseclass)
+        self.baseclasses: Tuple[Type[BaseModule], ...] = baseclass
 
         if default is None:
             default = self.baseclasses if baseclass_as_default else ()
@@ -406,7 +423,7 @@ class ModuleParser(_ModuleArgumentParser):
                 dest='modules',
                 action=append_modules(self, self.baseclasses, bool(entrypoints)),
                 default=self.default_class,
-                choices=choices,  # type: ignore
+                choices=choices,
                 help=help_text
             )
         if self.version:
@@ -415,21 +432,6 @@ class ModuleParser(_ModuleArgumentParser):
                 action='version',
                 version=self.version
             )
-
-    @typechecked
-    def _get_baseclasses(self, baseclass: Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]) -> Tuple[Type[BaseModule], ...]:
-        # set default as baseclass if baseclass is not set
-        _baseclasses: List[Type[BaseModule]] = list(baseclass) if isinstance(baseclass, tuple) else [baseclass]
-        # self.baseclasses must be tuple, because issubclass requires tuple and not list
-        baseclasses = tuple([bcls for bcls in _baseclasses if bcls])
-
-        # check if all baseclasses are subclass of BaseModule
-        for bcls in baseclasses:
-            if not isinstance(bcls, type) or not issubclass(bcls, BaseModule):
-                raise ModuleError(message='Baseclass mast be subclass of BaseModule')
-        if not baseclasses:
-            logging.debug("modules are not supported")
-        return baseclasses
 
     @property
     def parser(self) -> 'ModuleParser':
@@ -514,10 +516,7 @@ class ModuleParser(_ModuleArgumentParser):
                     raise ModuleError(module, baseclass)
                 module = modulecls
             if not issubclass(module, baseclass):
-                logging.error('module is not an instance of baseclass')
-                raise ModuleError(module, baseclass)
-            if module is baseclass:
-                logging.error('module must not be baseclass!')
+                logging.error('module %s is not an instance of baseclass %s', module, baseclass)
                 raise ModuleError(module, baseclass)
             moduleparsers.append(module.parser())
 
