@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 import logging
 import os
@@ -19,14 +17,20 @@ class LogModule(ModuleParserPlugin):
 
     LOGFILE: Optional[Text] = None
 
-    def __init__(self, cmdargs: Optional[List[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> None:
+    def __init__(
+        self,
+        cmdargs: Optional[List[Text]] = None,
+        namespace: Optional[argparse.Namespace] = None
+    ) -> None:
         super().__init__(cmdargs, namespace)
 
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.DEBUG if self.args.debug else logging.INFO)
 
         logformatter = logging.Formatter('%(asctime)s [%(levelname)s]  %(message)s')
-        logformatter_debug = logging.Formatter('%(asctime)s [%(filename)s:%(lineno)s - %(funcName)s() - %(threadName)s] [%(levelname)s]  %(message)s')
+        logformatter_debug = logging.Formatter(
+            '%(asctime)s [%(filename)s:%(lineno)s - %(funcName)s() - %(threadName)s] [%(levelname)s]  %(message)s'
+        )
         for handler in root_logger.handlers:
             handler.setFormatter(logformatter_debug if self.args.debug else logformatter)
 
@@ -75,6 +79,7 @@ class LogModule(ModuleParserPlugin):
 
     @staticmethod
     def create_log_dir(logfile: Text) -> bool:
+        """create the log directory, if it does not exist"""
         usefilelogger = True
         logpath = os.path.dirname(logfile)
         if not os.path.exists(logpath):

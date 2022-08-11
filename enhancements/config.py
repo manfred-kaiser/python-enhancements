@@ -4,8 +4,6 @@ from configparser import ConfigParser
 import inspect
 import logging
 import os
-import pickle  # nosec
-import pkg_resources
 from typing import (
     cast,
     Any,
@@ -16,6 +14,9 @@ from typing import (
     Type
 )
 
+import pickle  # nosec
+import pkg_resources
+
 from enhancements.modules import get_module_class, BaseModule
 
 
@@ -25,7 +26,7 @@ class DefaultConfigNotFound(Exception):
 
 class ExtendedConfigParser(ConfigParser):
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         productionini: Optional[Text] = None,
         defaultini: Text = 'default.ini',
@@ -114,11 +115,7 @@ class ExtendedConfigParser(ConfigParser):
         values = get_module_class(module, modules_from_file=self.modules_from_file)
         if not values:
             raise ValueError(
-                'Not a valid module class! section: {}, option: {}, value: {}'.format(
-                    section,
-                    option,
-                    module
-                )
+                f'Not a valid module class! section: {section}, option: {option}, value: {module}'
             )
         return values[0]
 
@@ -149,7 +146,7 @@ class ExtendedConfigParser(ConfigParser):
             raise ValueError("Not a valid module prefix. Only strings and module are supported.")
 
         for section in self.sections():
-            if section.startswith('{}:'.format(module_prefix)):
+            if section.startswith(f'{module_prefix}:'):
                 if self.getboolean(section, 'enabled'):
                     module = self.getmodule(section, 'class')
                     if module:

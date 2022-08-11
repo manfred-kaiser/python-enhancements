@@ -30,13 +30,6 @@ import importlib
 import logging
 import argparse
 import inspect
-import traceback
-from types import ModuleType
-import pkg_resources
-import argcomplete  # type: ignore
-from colored.colored import attr, fg, stylize  # type: ignore
-
-from typeguard import typechecked
 
 from typing import (
     cast,
@@ -50,6 +43,13 @@ from typing import (
     Text,
     Union
 )
+
+from types import ModuleType
+import pkg_resources
+import argcomplete  # type: ignore
+from colored.colored import attr, fg, stylize  # type: ignore
+
+from typeguard import typechecked
 
 from enhancements.exceptions import ModuleFromFileException
 
@@ -84,7 +84,7 @@ def _load_module_from_string(modname: Text, modules_from_file: bool = False) -> 
     if not modules_from_file:
         raise ModuleFromFileException('loading a module from a file is not allowed')
 
-    modname_file = 'enhanced_moduleloader_{}'.format(modname)
+    modname_file = f'enhanced_moduleloader_{modname}'
     if modname_file in sys.modules:
         logging.debug("using already imported module %s", modname_file)
         return sys.modules[modname_file]
@@ -141,18 +141,18 @@ def get_module_class(modulelist: Union[Type['BaseModule'], Text, Sequence[Union[
                 modules.append(modulearg)
             else:
                 pass
-    except ImportError:
-        raise ModuleError
-    except Exception:
+    except ImportError as exc:
+        raise ModuleError from exc
+    except Exception as exc:
         # in case of an exception delete all loaded modules
-        raise ModuleError(message=traceback.format_exc())
+        raise ModuleError() from exc
     return modules
 
 
 @typechecked
 def load_entry_point(entrypoint: str, name: str) -> Optional[Type['BaseModule']]:
     for entry_point in pkg_resources.iter_entry_points(entrypoint):
-        if entry_point.name == name or entry_point.module_name == name:
+        if name in (entry_point.name, entry_point.module_name):
             return cast(Type['BaseModule'], entry_point.load())
     return None
 
@@ -168,20 +168,17 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
                     entry_point_list = []
                     for entry_point in pkg_resources.iter_entry_points(entry_point_name):
                         entry_point_list.append(entry_point.name)
-                        if entry_point.name == values or entry_point.module_name == values:
+                        if values in (entry_point.name, entry_point.module_name):
                             values = [entry_point.load()]
                             break
                     else:
                         try:
                             values = get_module_class(values, moduleloader)
-                        except Exception:
+                        except Exception as exc:
                             raise argparse.ArgumentError(
                                 self,
-                                "BaseModule '{}' not found! Valid modules are: {}".format(
-                                    values,
-                                    ", ".join(entry_point_list)
-                                )
-                            )
+                                f"BaseModule '{values}' not found! Valid modules are: {', '.join(entry_point_list)}"
+                            ) from exc
                 else:
                     values = get_module_class(values, moduleloader)
                 setattr(namespace, self.dest, values[0] if values else None)
@@ -192,7 +189,7 @@ def load_module(moduleloader: Optional['ModuleParser'] = None, entry_point_name:
 def append_modules(moduleloader: Optional['ModuleParser'] = None, baseclasses: Optional[Tuple[Type['BaseModule'], ...]] = None, use_entrypoints: bool = False) -> Type['argparse._AppendAction']:
     """Action für den ModuleParser um BaseModule als Kommanozeilen Parameter "--module" definieren zu können
     """
-    class ModuleLoaderAppendAction(argparse._AppendAction):
+    class ModuleLoaderAppendAction(argparse._AppendAction):  # pylint: disable=protected-access
         def __call__(self, parser: argparse.ArgumentParser, namespace: argparse.Namespace, values: Union[Text, Sequence[Any], None], option_string: Optional[Text] = None) -> None:
             if not values:
                 return
@@ -302,10 +299,10 @@ class BaseModule():
         for param_name, param_value in kwargs.items():
             action = actions.get(param_name)
             if not action:
-                raise KeyError('keyword argument {} has no param'.format(param_name))
+                raise KeyError(f'keyword argument {param_name} has no param')
             # check if it is an instance of the argument type, ignore mypy error because of false positive
             if hasattr(action, 'type') and not isinstance(param_value, action.type):  # type: ignore
-                raise ValueError('Value {} for parameter is not an instance of {}'.format(param_value, action.type))
+                raise ValueError(f'Value {param_value} for parameter is not an instance of {action.type}')
             setattr(self.args, param_name, param_value)
 
     @classmethod
@@ -340,7 +337,7 @@ class BaseModule():
             cls._parser = _ModuleArgumentParser(add_help=False, description=cls.__name__)
             cls.parser_arguments()
         if not cls._parser:
-            raise ValueError('failed to create ModuleParser for {}'.format(cls))
+            raise ValueError(f'failed to create ModuleParser for {cls}')
         return cls._parser
 
     @classmethod
@@ -350,7 +347,7 @@ class BaseModule():
             parser = cls.parser()
             cls._parser_group = parser.add_argument_group(cls.__name__)
         if not cls._parser_group:
-            raise ValueError('failed to create ModuleParserGroup for {}'.format(cls))
+            raise ValueError(f'failed to create ModuleParserGroup for {cls}')
         return cls._parser_group
 
     @classmethod
@@ -358,7 +355,7 @@ class BaseModule():
     def config_section_name(cls) -> Text:  # pylint: disable=E0213
         if not cls.CONFIG_PREFIX:
             return cls.__name__
-        return "{}:{}".format(cls.CONFIG_PREFIX, cls.__name__)
+        return f"{cls.CONFIG_PREFIX}:{cls.__name__}"
 
 
 class ModuleParserPlugin(BaseModule):
@@ -371,7 +368,7 @@ class ModuleFormatter(argparse.HelpFormatter):
     provided by the class are considered an implementation detail.
     """
 
-    class _Section():
+    class _Section():  # pylint: disable=too-few-public-methods
 
         @typechecked
         def __init__(self, formatter: argparse.HelpFormatter, parent: Any, heading: Optional[Text] = None) -> None:
@@ -384,11 +381,11 @@ class ModuleFormatter(argparse.HelpFormatter):
         def format_help(self) -> Text:
             # format the indented section
             if self.parent is not None:
-                self.formatter._indent()
-            join = self.formatter._join_parts
+                self.formatter._indent()  # pylint: disable=protected-access
+            join = self.formatter._join_parts  # pylint: disable=protected-access
             item_help = join([func(*args) for func, args in self.items])
             if self.parent is not None:
-                self.formatter._dedent()
+                self.formatter._dedent()  # pylint: disable=protected-access
 
             # return nothing if the section was empty
             if not item_help:
@@ -396,8 +393,8 @@ class ModuleFormatter(argparse.HelpFormatter):
 
             # add the heading if the section was non-empty
             if self.heading is not argparse.SUPPRESS and self.heading is not None:
-                current_indent = self.formatter._current_indent
-                heading = '%*s%s:\n' % (current_indent, '', stylize(self.heading, fg('red') + attr('bold')))
+                current_indent = self.formatter._current_indent  # pylint: disable=protected-access
+                heading = '%*s%s:\n' % (current_indent, '', stylize(self.heading, fg('red') + attr('bold')))  # pylint: disable=consider-using-f-string
             else:
                 heading = ''
 
@@ -409,10 +406,10 @@ class ModuleFormatter(argparse.HelpFormatter):
         return text.splitlines()
 
 
-class ModuleParser(_ModuleArgumentParser):
+class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-attributes
 
     @typechecked
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         default: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
         baseclass: Optional[Union[Type[BaseModule], Tuple[Type[BaseModule], ...]]] = None,
@@ -493,7 +490,7 @@ class ModuleParser(_ModuleArgumentParser):
             if module_parser.description == parser.description:
                 return
         # remove help action from parser
-        parser._actions[:] = [x for x in parser._actions if not isinstance(x, argparse._HelpAction)]
+        parser._actions[:] = [x for x in parser._actions if not isinstance(x, argparse._HelpAction)]  # pylint: disable=protected-access
         # append parser to list
         self._module_parsers.add(parser)
 
@@ -530,7 +527,6 @@ class ModuleParser(_ModuleArgumentParser):
         modulelist = [getattr(parsed_args, m[0].dest) for m in modules if hasattr(parsed_args, m[0].dest)]
         modulebasecls: List[Tuple[Type[BaseModule], ...]] = [(m[1], ) for m in modules]
         return self.get_sub_modules(
-            parsed_args=parsed_args,
             args=args,
             namespace=namespace,
             modules=modulelist,
@@ -541,7 +537,6 @@ class ModuleParser(_ModuleArgumentParser):
     def get_sub_modules(
         self,
         *,
-        parsed_args: argparse.Namespace,
         args: Optional[Sequence[Text]],
         namespace: Optional[argparse.Namespace],
         modules: Optional[List[Type[BaseModule]]],
@@ -550,7 +545,7 @@ class ModuleParser(_ModuleArgumentParser):
         moduleparsers: List[argparse.ArgumentParser] = []
         if not modules:
             return moduleparsers
-        modulelist = [m for m in modules]
+        modulelist = list(modules)
         modulebasecls = baseclasses or [self.baseclasses for _ in modules]
 
         for module, baseclass in zip(modulelist, modulebasecls):
@@ -602,9 +597,7 @@ class ModuleParser(_ModuleArgumentParser):
                 self.add_parser(module.parser())
                 parsed_sub_args_tuple = module.parser().parse_known_args(args=args, namespace=namespace)
                 if parsed_sub_args_tuple:
-                    parsed_sub_args, _ = parsed_sub_args_tuple
                     submods = self.get_sub_modules(
-                        parsed_args=parsed_sub_args,
                         args=args,
                         namespace=namespace,
                         modules=parsed_args.modules
