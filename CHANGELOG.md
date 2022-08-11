@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- removed BaseReturnCode class
+- removed pid_lock function
+
 ## [0.4.0] - 2022-04-05
 
 ### Added
