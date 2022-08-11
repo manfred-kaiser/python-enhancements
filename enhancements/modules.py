@@ -46,7 +46,6 @@ from typing import (
 
 from types import ModuleType
 import pkg_resources
-import argcomplete  # type: ignore
 from colored.colored import attr, fg, stylize  # type: ignore
 
 from typeguard import typechecked
@@ -416,7 +415,6 @@ class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-
         baseclass_as_default: bool = True,
         modules_from_file: bool = False,
         version: Optional[Text] = None,
-        autocomplete: bool = False,
         **kwargs: Any
     ) -> None:
         if baseclass is None:
@@ -439,7 +437,6 @@ class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-
         self._module_parsers: Set[argparse.ArgumentParser] = {self}
         self._plugins: Dict[Type[ModuleParserPlugin], Optional[BaseModule]] = {}
         self.version: Optional[Text] = version
-        self.autocomplete: bool = autocomplete
 
         self.baseclasses: Tuple[Type[BaseModule], ...] = baseclass
 
@@ -579,6 +576,10 @@ class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-
         pass
 
     @typechecked
+    def create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> 'argparse.ArgumentParser':
+        return self._create_parser(args=args, namespace=namespace)
+
+    @typechecked
     def _create_parser(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> 'argparse.ArgumentParser':
         parsed_args_tuple = super().parse_known_args(args=args, namespace=namespace)
         if not parsed_args_tuple:
@@ -631,9 +632,7 @@ class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-
 
     @typechecked
     def parse_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> argparse.Namespace:  # type: ignore
-        parser = self._create_parser(args=args, namespace=namespace)
-        if self.autocomplete:
-            argcomplete.autocomplete(parser)
+        parser = self.create_parser(args=args, namespace=namespace)
         args_namespace = parser.parse_args(args, namespace)
         if not args_namespace:
             return argparse.Namespace()
@@ -641,7 +640,5 @@ class ModuleParser(_ModuleArgumentParser):  # pylint: disable=too-many-instance-
 
     @typechecked
     def parse_known_args(self, args: Optional[Sequence[Text]] = None, namespace: Optional[argparse.Namespace] = None) -> Tuple[argparse.Namespace, List[str]]:
-        parser = self._create_parser(args=args, namespace=namespace)
-        if self.autocomplete:
-            argcomplete.autocomplete(parser)
+        parser = self.create_parser(args=args, namespace=namespace)
         return parser.parse_known_args(args, namespace)

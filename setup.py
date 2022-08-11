@@ -44,7 +44,6 @@ setup(
         "Development Status :: 5 - Production/Stable"
     ],
     install_requires=[
-        'argcomplete',
         'colored',
         'typeguard'
     ]

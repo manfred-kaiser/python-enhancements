@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- added a method create_parser in ModuleParser which allows to initiate argcomplete in the program itself
+
 ### Removed
 
 - removed BaseReturnCode class
 - removed pid_lock function
+- removed argcomplete
 
 ## [0.4.0] - 2022-04-05
 
